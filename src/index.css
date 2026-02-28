@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Jost:wght@300;400;500;600;700&family=Ma+Shan+Zheng&display=swap');
+@import "tailwindcss";
+
+@theme {
+    /* Light Theme Tokens */
+    --color-void: #f8fafc;
+    --color-ink: #f1f5f9;
+    --color-jade: #059669;
+    --color-gold: #d97706;
+    --color-sky: #0284c7;
+    --color-rose: #e11d48;
+    --color-amber: #d97706;
+
+    --font-serif: "Ma Shan Zheng", "Noto Serif SC", "Bodoni Moda", serif;
+    --font-serif-sc: "Ma Shan Zheng", "Noto Serif SC", serif;
+    --font-sans: "Jost", "Noto Sans SC", sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+
+    --animate-float: float 6s ease-in-out infinite;
+    --animate-pulse-glow: pulse-glow 3s infinite;
+    --animate-fade-in: fade-in 0.5s ease-out;
+    --animate-slide-up: slide-up 0.5s ease-out;
+    --animate-shimmer: shimmer 2s infinite;
+}
+
+@layer base {
+
+    html,
+    body,
+    #root {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    body {
+        @apply bg-void text-slate-800 font-sans antialiased selection:bg-jade selection:text-white;
+        background-image:
+            radial-gradient(circle at 50% 0%, #e2e8f0 0%, transparent 50%),
+            radial-gradient(circle at 0% 100%, #ede9fe 0%, transparent 40%);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-serif tracking-wide;
+    }
+}
+
+@layer components {
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(12px);
+        @apply border border-slate-200 shadow-lg;
+    }
+
+    .glass-card {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.7));
+        @apply border border-slate-200 transition-all duration-300;
+    }
+
+    .glass-card:hover {
+        @apply border-emerald-400/50 -translate-y-[2px];
+        box-shadow: 0 10px 40px -10px rgba(5, 150, 105, 0.15);
+    }
+
+    .text-glow {
+        text-shadow: 0 0 20px rgba(5, 150, 105, 0.15);
+    }
+
+    .text-gradient-gold {
+        background: linear-gradient(135deg, #92400e 0%, #d97706 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* 文字描边 - 提升可读性 */
+    .text-outlined {
+        -webkit-text-stroke: 0.3px rgba(0, 0, 0, 0.15);
+        paint-order: stroke fill;
+        text-shadow:
+            0 0 1px rgba(255, 255, 255, 0.8),
+            0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .text-outlined-strong {
+        -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.2);
+        paint-order: stroke fill;
+        text-shadow:
+            0 0 2px rgba(255, 255, 255, 0.9),
+            0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .text-outlined-dark {
+        -webkit-text-stroke: 0.4px rgba(0, 0, 0, 0.25);
+        paint-order: stroke fill;
+        text-shadow:
+            1px 1px 0 rgba(255, 255, 255, 0.6),
+            -1px -1px 0 rgba(255, 255, 255, 0.6),
+            1px -1px 0 rgba(255, 255, 255, 0.6),
+            -1px 1px 0 rgba(255, 255, 255, 0.6);
+    }
+}
+
+/* Animations */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 15px rgba(5, 150, 105, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(5, 150, 105, 0.12);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slide-up {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translate(-4px, -4px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translate(4px, 4px);
+    }
+}
+
+@keyframes flash {
+
+    0%,
+    100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+
+    50% {
+        opacity: 1;
+        filter: brightness(1.3) contrast(1.1);
+        background-color: rgba(5, 150, 105, 0.1);
+    }
+}
+
+.animate-shake {
+    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+.animate-flash {
+    animation: flash 0.3s ease-in-out;
+}
+
+/* Custom Scrollbar - Light Theme */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}

@@ -1,0 +1,127 @@
+﻿
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\components\BreakthroughOverlay.tsx
+  13:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\components\BreakthroughOverlay.tsx:13:13
+  11 |     useEffect(() => {
+  12 |         if (breakthroughMsg && breakthroughMsg.includes('绐佺牬鎴愬姛')) {
+> 13 |             setIsVisible(true);
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  14 |         }
+  15 |     }, [breakthroughMsg]);
+  16 |  react-hooks/set-state-in-effect
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\components\CombatOverlay.tsx
+   2:17  error  'useEffect' is defined but never used                  @typescript-eslint/no-unused-vars
+   4:18  error  'AnimatePresence' is defined but never used            @typescript-eslint/no-unused-vars
+  11:12  error  'shake' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  11:19  error  'setShake' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  12:12  error  'damageFloater' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  12:27  error  'setDamageFloater' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\components\MissionLogModal.tsx
+    5:15   error  'Mission' is defined but never used       @typescript-eslint/no-unused-vars
+  126:84   error  'i' is defined but never used             @typescript-eslint/no-unused-vars
+  128:122  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:72   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\components\SpiritAvatar.tsx
+  10:38  error  'realm' is defined but never used                 @typescript-eslint/no-unused-vars
+  12:43  error  'shapeConfig' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\components\WorldMap\MapNode.tsx
+  2:33  error  'LocationType' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\editor\ConditionBuilder.tsx
+   3:26  error  'ConditionType' is defined but never used  @typescript-eslint/no-unused-vars
+   3:41  error  'ConditionOp' is defined but never used    @typescript-eslint/no-unused-vars
+  23:71  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\editor\ConfigEditor.tsx
+  8:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\editor\EventEditor.tsx
+  35:13  error  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\editor\EventEditor.tsx:35:13
+  33 |         const idx = events.findIndex(e => e.id === editedEvent.id);
+  34 |         if (idx >= 0) {
+> 35 |             events[idx] = editedEvent;
+     |             ^^^^^^ `events` cannot be modified
+  36 |             // Force engine update if needed?
+  37 |             // Engine usually reads events reference.
+  38 |             alert('Event saved to memory (Runtime only)');  react-hooks/immutability
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\engine\GameEngine.ts
+    12:24  error  'MissionObjective' is defined but never used       @typescript-eslint/no-unused-vars
+    12:42  error  'GenericMissionState' is defined but never used    @typescript-eslint/no-unused-vars
+   850:87  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  1005:19  error  'exp' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  1054:25  error  Unexpected lexical declaration in case block       no-case-declarations
+  1078:21  error  'stateChanged' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\engine\WorldGenerator.ts
+  21:5  error  'LocationType' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\store\gameStore.ts
+  23:33  error  'targetVersion' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\types\meta.ts
+  42:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\types\missionTypes.ts
+  27:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\types\worldTypes.ts
+   34:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   41:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   42:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\utils\ConditionMatcher.ts
+   6:83  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\utils\DataUtils.ts
+  27:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\utils\TimeUtils.ts
+  53:11  error  'termIndex' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  54:11  error  'SOLAR_TERMS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\utils\guideSystem.ts
+   1:10  error  'REALMS' is defined but never used       @typescript-eslint/no-unused-vars
+  51:15  error  'mp' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\views\CharacterSheet.tsx
+    5:26  error  'NPC' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+  229:73  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\views\CharacterSheet.tsx:229:73
+  227 |                     {/* 搴曢儴鏍囪瘑 */}
+  228 |                     <div className="p-3 text-[9px] font-mono text-slate-700 text-center border-t border-slate-800/30 bg-black/20">
+> 229 |                         {isNPC ? `NPC 路 ${inspectTarget.id}` : `UID 路 ${Math.random().toString(36).slice(2, 10).toUpperCase()}`}
+      |                                                                         ^^^^^^^^^^^^^ Cannot call impure function
+  230 |                     </div>
+  231 |                 </div>
+  232 |  react-hooks/purity
+
+D:\MyCode\Games\Aeon\xianxia-meta-web\src\views\ReincarnationHall.tsx
+  6:41  error  'loadMeta' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+鉁?47 problems (47 errors, 0 warnings)
+
