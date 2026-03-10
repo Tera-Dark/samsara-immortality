@@ -5,13 +5,20 @@ import { TEXT_CONSTANTS } from '../../data/rules';
 import { ITEMS } from '../../data/items';
 import { MissionSystem } from './MissionSystem';
 import { CultivationSystem } from './CultivationSystem';
+import { checkAffinityEvents } from '../../modules/xianxia/data/events/events_affinity';
 
 export class EventSystem {
     static findEvent(engine: GameEngine, context?: { action?: string }): GameEvent | null {
         // 1. Update World State (Eras) - moved to TimeSystem later, but keep simple for now
         engine.state.world.worldMonth++;
 
-        // 2. Filter candidates using unified V2 Condition System
+        // 2. High Priority: Dynamic Affinity Events
+        const affinityEvent = checkAffinityEvents(engine);
+        if (affinityEvent) {
+            return affinityEvent;
+        }
+
+        // 3. Filter candidates using unified V2 Condition System
         const candidates = engine.events.filter(e => {
             if (engine.state.triggeredEvents.includes(e.id)) return false;
 

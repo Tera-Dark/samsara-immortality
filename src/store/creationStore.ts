@@ -30,8 +30,8 @@ export const useCreationStore = create<CreationState>()(
         (set, get) => ({
             availableTalents: [],
             selectedTalentIds: [],
-            allocStats: { STR: 0, INT: 0, CHR: 0, POT: 0, LUCK: 0 },
-            availablePoints: 20,
+            allocStats: { STR: 0, MND: 0, INT: 0, CHR: 0, POT: 0, LUCK: 0 },
+            availablePoints: 24,
             statsConfirmed: false,
             talentResetCount: 0,
 
@@ -105,10 +105,13 @@ export const useCreationStore = create<CreationState>()(
 
             selectTalent: (id: string) => {
                 const { selectedTalentIds } = get();
+                const metaState = useMetaStore.getState().metaState;
+                const maxTalents = 3 + (metaState.unlockedUpgrades['meta_talent_slot'] || 0);
+
                 if (selectedTalentIds.includes(id)) {
                     set({ selectedTalentIds: selectedTalentIds.filter(tid => tid !== id) });
                 } else {
-                    if (selectedTalentIds.length < 3) {
+                    if (selectedTalentIds.length < maxTalents) {
                         set({ selectedTalentIds: [...selectedTalentIds, id] });
                     }
                 }
@@ -119,8 +122,8 @@ export const useCreationStore = create<CreationState>()(
                 // 重置属性分配
                 useUIStore.getState().setScene('ALLOC');
                 set({
-                    availablePoints: 20,
-                    allocStats: { STR: 0, INT: 0, CHR: 0, POT: 0, LUCK: 0 },
+                    availablePoints: 24,
+                    allocStats: { STR: 0, MND: 0, INT: 0, CHR: 0, POT: 0, LUCK: 0 },
                 });
             },
 
@@ -145,11 +148,11 @@ export const useCreationStore = create<CreationState>()(
 
                 if (mode === 'AVG') {
                     set({
-                        allocStats: { STR: 4, INT: 4, CHR: 4, POT: 4, LUCK: 4 },
+                        allocStats: { STR: 4, MND: 4, INT: 4, CHR: 4, POT: 4, LUCK: 4 },
                         availablePoints: 0
                     });
                 } else {
-                    const stats = { STR: 0, INT: 0, CHR: 0, POT: 0, LUCK: 0 };
+                    const stats = { STR: 0, MND: 0, INT: 0, CHR: 0, POT: 0, LUCK: 0 };
                     const keys = Object.keys(stats) as Array<keyof typeof stats>;
                     let pts = totalPoints;
 
@@ -173,6 +176,24 @@ export const useCreationStore = create<CreationState>()(
                 // Map talent IDs back to objects
                 const selectedTalentObjects = selectedTalentIds.map(id => TALENTS.find(t => t.id === id)).filter(t => t !== undefined) as Talent[];
 
+                const metaState = useMetaStore.getState().metaState;
+                const upgrades = metaState.unlockedUpgrades;
+
+                // Combine User Allocation with Meta Upgrades
+                const finalStats = { ...allocStats };
+                finalStats.STR += (upgrades['meta_str'] || 0);
+                finalStats.INT += (upgrades['meta_int'] || 0);
+                finalStats.CHR += (upgrades['meta_chr'] || 0);
+                finalStats.POT += (upgrades['meta_pot'] || 0);
+                finalStats.MND += (upgrades['meta_mnd'] || 0);
+                finalStats.LUCK += (upgrades['meta_luck'] || 0);
+
+                // Initial Money
+                const startingMoney = (upgrades['meta_starting_money'] || 0) * 50;
+                if (startingMoney > 0) {
+                    finalStats.MONEY = (finalStats.MONEY || 0) + startingMoney;
+                }
+
                 // Clear local state
                 set({
                     availableTalents: [],
@@ -183,7 +204,8 @@ export const useCreationStore = create<CreationState>()(
 
                 // Initialize and start game
                 const gameStore = useGameStore.getState();
-                gameStore.startGame(selectedTalentObjects, allocStats);
+                gameStore.startGame(selectedTalentObjects, finalStats);
+
                 useUIStore.getState().setScene('GAME');
             }
         }),

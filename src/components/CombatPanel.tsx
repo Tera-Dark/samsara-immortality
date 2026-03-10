@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 import type { CombatEntity, CombatSkill } from '../types/combat';
+import { Sparkles, Swords, User, Skull } from 'lucide-react';
 
 export const CombatPanel: React.FC = () => {
     const { currentCombat, executeCombatSkill, fleeCombat, exitCombat } = useGameStore();
@@ -24,8 +25,8 @@ export const CombatPanel: React.FC = () => {
         return (
             <div className={`flex flex-col gap-2 w-full max-w-xs ${isRight ? 'items-end' : 'items-start'}`}>
                 <div className="flex items-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center text-2xl shadow-lg ring-2 ring-transparent transition-all">
-                        {isRight ? '👿' : '🥷'}
+                    <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center text-slate-300 shadow-lg ring-2 ring-transparent transition-all">
+                        {isRight ? <Skull className="w-8 h-8 opacity-80" /> : <User className="w-8 h-8 opacity-80" />}
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-slate-800 font-serif tracking-wide">{entity.name}</h3>
@@ -85,8 +86,13 @@ export const CombatPanel: React.FC = () => {
             <div className="bg-white border border-slate-200/60 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative z-10 animate-slide-up">
                 {/* Header */}
                 <div className="bg-slate-50/50 p-4 border-b border-slate-200/80 flex justify-between items-center px-6">
-                    <h2 className="text-lg font-serif font-bold tracking-widest text-slate-700">
-                        {currentCombat.type === 'TRIBULATION' ? '✨ 九天雷劫' : '⚔️ 遭遇战'} - 第 {currentCombat.turn} 回合
+                    <h2 className="text-lg font-serif font-bold tracking-widest text-slate-700 flex items-center gap-2">
+                        {currentCombat.type === 'TRIBULATION' ? (
+                            <><Sparkles className="w-5 h-5 text-amber-500" /> 九天雷劫</>
+                        ) : (
+                            <><Swords className="w-5 h-5 text-slate-500" /> 遭遇战</>
+                        )}
+                        <span className="text-slate-400 text-sm ml-2 font-normal"> - 第 {currentCombat.turn} 回合</span>
                     </h2>
                     {status === 'ACTIVE' && currentCombat.type !== 'TRIBULATION' && (
                         <button

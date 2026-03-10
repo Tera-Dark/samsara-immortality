@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { EventEditor } from './EventEditor';
 import { ConfigEditor } from './ConfigEditor';
+import { ScrollText, Wrench, Settings } from 'lucide-react';
 
 export const EditorLayout: React.FC = () => {
     const { engine } = useGameStore();
@@ -12,7 +13,7 @@ export const EditorLayout: React.FC = () => {
             {/* Sidebar */}
             <div className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col">
                 <div className="p-4 border-b border-gray-800">
-                    <div className="font-bold text-lg text-emerald-400 font-serif">⚙ 事件编辑器</div>
+                    <div className="font-bold text-lg text-emerald-400 font-serif flex items-center gap-2"><Settings className="w-4 h-4" /> 事件编辑器</div>
                     <div className="text-xs text-slate-500 mt-1">Ctrl+E 切换</div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -23,7 +24,7 @@ export const EditorLayout: React.FC = () => {
                             : 'hover:bg-gray-800 text-slate-400 border border-transparent'
                             }`}
                     >
-                        📜 事件管理
+                        <span className="flex items-center gap-2"><ScrollText className="w-4 h-4" /> 事件管理</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('CONFIG')}
@@ -32,7 +33,7 @@ export const EditorLayout: React.FC = () => {
                             : 'hover:bg-gray-800 text-slate-400 border border-transparent'
                             }`}
                     >
-                        🔧 配置编辑
+                        <span className="flex items-center gap-2"><Wrench className="w-4 h-4" /> 配置编辑</span>
                     </button>
                 </div>
                 <div className="p-3 border-t border-gray-800 text-xs text-gray-600 space-y-1">
@@ -47,7 +48,7 @@ export const EditorLayout: React.FC = () => {
                 {/* Header Toolbar */}
                 <div className="h-12 bg-gray-900 border-b border-gray-800 flex items-center px-6 justify-between">
                     <h2 className="font-bold text-sm text-slate-300">
-                        {activeTab === 'CONFIG' ? '🔧 配置编辑' : '📜 事件管理'}
+                        {activeTab === 'CONFIG' ? <span className="flex items-center gap-2"><Wrench className="w-4 h-4" /> 配置编辑</span> : <span className="flex items-center gap-2"><ScrollText className="w-4 h-4" /> 事件管理</span>}
                     </h2>
                     <div className="flex gap-3">
                         <button

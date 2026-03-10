@@ -77,6 +77,8 @@ export type LocationType =
     | 'SPIRIT_VEIN'  // 灵脉
     | 'RUINS'        // 遗迹
     | 'MARKET'       // 交易所
+    | 'INN'          // 客栈 [NEW]
+    | 'AUCTION_HOUSE'// 拍卖行 [NEW]
     | 'SECT';        // 宗门 (Generic)
 
 export interface Location {
@@ -167,7 +169,9 @@ export interface WorldNPC {
     alignment?: Alignment;
     combatPower?: number;
     knownToPlayer?: boolean;
-    playerFavor?: number;
+    playerFavor?: number; // Legacy
+    affinity?: number; // -100 to 100 [NEW]
+    relationships?: string[]; // [NEW] e.g. 'PARTNER', 'ENEMY'
 }
 
 // 5. Resources

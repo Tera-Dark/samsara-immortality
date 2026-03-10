@@ -6,20 +6,21 @@ import { XianxiaConfig } from '../modules/xianxia/config';
 // 属性配色方案 - 保持一致但优化细节
 const STAT_THEMES: Record<string, { symbol: string; gradient: string; barColor: string; glowColor: string; symbolColor: string; label: string }> = {
     STR: { symbol: '力', label: '武', gradient: 'from-amber-700 to-red-600', barColor: 'bg-gradient-to-r from-red-400 to-red-500', glowColor: 'rgba(220,38,38,0.3)', symbolColor: 'text-red-700 border-red-200 bg-red-50' },
+    MND: { symbol: '神', label: '识', gradient: 'from-cyan-700 to-blue-600', barColor: 'bg-gradient-to-r from-cyan-400 to-blue-500', glowColor: 'rgba(6,182,212,0.3)', symbolColor: 'text-cyan-700 border-cyan-200 bg-cyan-50' },
     INT: { symbol: '智', label: '悟', gradient: 'from-violet-700 to-indigo-600', barColor: 'bg-gradient-to-r from-indigo-400 to-indigo-500', glowColor: 'rgba(99,102,241,0.3)', symbolColor: 'text-indigo-700 border-indigo-200 bg-indigo-50' },
     POT: { symbol: '根', label: '骨', gradient: 'from-emerald-700 to-teal-600', barColor: 'bg-gradient-to-r from-emerald-400 to-teal-500', glowColor: 'rgba(16,185,129,0.3)', symbolColor: 'text-emerald-700 border-emerald-200 bg-emerald-50' },
     CHR: { symbol: '魅', label: '颜', gradient: 'from-rose-700 to-pink-600', barColor: 'bg-gradient-to-r from-rose-400 to-pink-500', glowColor: 'rgba(236,72,153,0.3)', symbolColor: 'text-rose-700 border-rose-200 bg-rose-50' },
     LUCK: { symbol: '运', label: '道', gradient: 'from-yellow-700 to-amber-500', barColor: 'bg-gradient-to-r from-amber-400 to-yellow-500', glowColor: 'rgba(245,158,11,0.3)', symbolColor: 'text-amber-700 border-amber-200 bg-amber-50' },
 };
 
-const TOTAL_POINTS = 20;
+const TOTAL_POINTS = 24;
 
 export const StatAlloc = () => {
     const { allocStats, availablePoints, updateStat, confirmStats } = useCreationStore();
 
     // 筛选基础属性
     const baseStats = useMemo(() => {
-        return XianxiaConfig.stats.filter(s => s.visible && ['STR', 'INT', 'POT', 'CHR', 'LUCK'].includes(s.id));
+        return XianxiaConfig.stats.filter(s => s.visible && ['STR', 'MND', 'INT', 'POT', 'CHR', 'LUCK'].includes(s.id));
     }, []);
 
     const usedPoints = TOTAL_POINTS - availablePoints;
@@ -44,7 +45,7 @@ export const StatAlloc = () => {
             <div className="shrink-0 mb-8 z-10 flex flex-col items-center">
                 <div className="flex items-center gap-3">
                     <span className="text-slate-500 font-serif tracking-widest text-sm">可用点数</span>
-                    <span className={`text-4xl font-mono font-bold transition-all duration-300 ${availablePoints > 0 ? 'text-sky-400 text-glow' : 'text-slate-600'}`}>
+                    <span className={`text-4xl font-bold transition-all duration-300 ${availablePoints > 0 ? 'text-sky-400 text-glow' : 'text-slate-600'}`}>
                         {availablePoints}
                     </span>
                 </div>
@@ -75,8 +76,8 @@ export const StatAlloc = () => {
                                 {/* Info & Bar */}
                                 <div className="flex-1">
                                     <div className="flex justify-between items-baseline mb-2">
-                                        <span className="text-lg font-serif font-bold text-slate-700 tracking-widest text-outlined-strong">{stat.name}</span>
-                                        <span className="text-sm text-slate-500 font-serif tracking-wider ml-4 text-outlined">{stat.description}</span>
+                                        <span className="text-lg font-serif font-bold text-slate-700 tracking-widest text-outlined-strong shrink-0 whitespace-nowrap">{stat.name}</span>
+                                        <span className="text-sm text-slate-500 ml-4 leading-relaxed">{stat.description}</span>
                                     </div>
                                     <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-200 relative">
                                         <div
@@ -95,7 +96,7 @@ export const StatAlloc = () => {
                                         disabled={value <= 0}
                                         className="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 text-slate-400 hover:text-white transition-colors disabled:opacity-20 disabled:cursor-not-allowed text-lg leading-none pb-0.5"
                                     >−</button>
-                                    <span className="w-8 text-center font-mono font-bold text-lg text-slate-700">{value}</span>
+                                    <span className="w-8 text-center font-bold text-lg text-slate-700">{value}</span>
                                     <button
                                         onClick={() => updateStat(stat.id, 1)}
                                         disabled={availablePoints <= 0}

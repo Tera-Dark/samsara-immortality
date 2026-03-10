@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import type { SceneData } from '../types/meta';
+import { User } from 'lucide-react';
 
 interface SceneViewProps {
     scene: SceneData;
@@ -40,7 +41,7 @@ export const SceneView: React.FC<SceneViewProps> = ({ scene, onChoice }) => {
                             <img src={char.image} alt={char.name} className="h-full object-contain filter drop-shadow-2xl" />
                         ) : (
                             <div className="h-full w-64 bg-slate-700/50 border-2 border-slate-500/50 backdrop-blur-sm flex items-center justify-center rounded-t-xl">
-                                <span className="text-4xl opacity-50">👤</span>
+                                <User className="w-10 h-10 text-slate-400 opacity-50" />
                             </div>
                         )}
 

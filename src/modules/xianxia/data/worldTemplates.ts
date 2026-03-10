@@ -105,6 +105,8 @@ export const LOCATION_TEMPLATES: LocationTemplate[] = [
     { type: 'SPIRIT_VEIN', namePatterns: ['{地名}灵脉', '{地名}龙穴', '地底{地名}灵泉'], weight: 8 },
     { type: 'RUINS', namePatterns: ['{地名}遗迹', '古修士{地名}洞府', '上古{地名}殿堂'], weight: 6 },
     { type: 'MARKET', namePatterns: ['{地名}集市', '散修{地名}交易所', '{地名}商盟'], weight: 8 },
+    { type: 'INN', namePatterns: ['{地名}客栈', '{地名}酒楼', '仙来客栈'], weight: 15 },
+    { type: 'AUCTION_HOUSE', namePatterns: ['{地名}拍卖行', '{地名}商会', '万宝楼'], weight: 5 },
 ];
 
 // ═══════════════════════════════════════
@@ -256,5 +258,7 @@ export const LOCATION_DESCRIPTORS: Record<LocationType, string[]> = {
     SPIRIT_VEIN: ['天地灵脉所在', '灵气喷涌的龙穴', '适合闭关的绝佳地点', '被宗门争夺的灵脉'],
     RUINS: ['古修士留下的废墟', '充满机关陷阱的遗迹', '传说有宝藏的古洞府', '岁月侵蚀的太古建筑'],
     MARKET: ['散修交易的临时集市', '各方势力设立的交易所', '黑市交易的隐秘场所', '繁忙的灵石兑换处'],
+    INN: ['人声鼎沸的凡人客栈', '供修女歇息的清幽酒楼', '鱼龙混杂的落脚点，常有小道消息流传'],
+    AUCTION_HOUSE: ['修仙者云集的金碧辉煌商会', '由大能坐镇的顶级拍卖行', '奇珍异宝暗流涌动的地下黑市'],
     SECT: ['宗门驻地', '门派分舵', '下界分支'],
 };

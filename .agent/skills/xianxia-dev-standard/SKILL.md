@@ -47,7 +47,7 @@ This skill outlines the mandatory development guidelines for the project. **Stri
     *   Do NOT use CSS modules or external `.css` files (except global `index.css`).
     *   Use `clsx` or template literals for conditional classes.
 *   **State Management**: `gameStore.ts` is the single source of truth.
-*   **Icons**: Copy SVG paths directly into components or use a standardized Icon component. Do NOT import heavy icon libraries.
+*   **Icons**: strictly use `lucide-react` for all UI icons to maintain a minimalist aesthetic. **NEVER use emojis (`🌱`, `⚔️`, etc.) in the UI**. Do not import other heavy icon libraries.
 
 ---
 
@@ -115,10 +115,14 @@ src/
     *   Color: Highlight gained items/stats in color (e.g., `text-emerald-400`).
 
 ### 5.2 Attributes (Stats)
-*   **Primary (5D)**: `STR` (体魄), `INT` (悟性), `POT` (资质), `CHR` (魅力), `LUCK` (气运).
+*   **Primary (6D)**: `STR` (体魄), `MND` (心志), `INT` (悟性), `POT` (资质), `CHR` (魅力), `LUCK` (气运).
 *   **Standard Keys**: Always use these 3-4 letter keys. Do NOT use `Strength`, `Intelligence` etc. at runtime.
 
-### 5.3 Modifications Checklist
+### 5.3 Reincarnation & Karma (轮回与因果)
+*   **Karma (因果点)**: Awarded upon character death (`alive: false`) via `GameOverOverlay`.
+*   **Meta Upgrades**: Stored in `metaStore` and applied during character creation (`creationStore.ts`). Use `useMetaStore` for cross-life progression.
+
+### 5.4 Modifications Checklist
 Before committing changes to specialized logic (e.g., Cultivation, Combat):
 1.  [ ] Check `GAME_RULES` in `rules.ts` for constants.
 2.  [ ] Ensure all text is Chinese.

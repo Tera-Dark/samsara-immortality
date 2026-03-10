@@ -5,7 +5,7 @@
  * 拒绝格式错误、包含非法字段或不安全内容的事件。
  */
 
-import type { GameEvent, Condition, Effect, EventChoice, ConditionType, ConditionOp } from '../types';
+import type { GameEvent, ConditionType, ConditionOp } from '../types';
 import { CONDITION_TYPES, CONDITION_OPS } from '../types';
 
 // ═══ Validation Types ═══

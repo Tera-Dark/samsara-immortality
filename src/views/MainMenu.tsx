@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import { SaveLoadModal } from '../components/SaveLoadModal';
 import { SettingsModal } from '../components/SettingsModal';
+import { Sparkles } from 'lucide-react';
 
 export const MainMenu = () => {
     const { loadGame, getSlots } = useGameStore();
@@ -107,7 +108,7 @@ export const MainMenu = () => {
                     {/* 分隔线 */}
                     <div className="flex items-center gap-4 w-full my-1">
                         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                        <span className="text-[10px] text-slate-400 font-mono">✦</span>
+                        <Sparkles className="w-3 h-3 text-slate-400" />
                         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
                     </div>
 

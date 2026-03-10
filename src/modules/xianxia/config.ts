@@ -8,7 +8,7 @@ export const XianxiaConfig: ModuleConfig = {
     description: '经典的修仙人生重开模拟器剧本。',
 
     stats: [
-        // --- Base Stats (先天五维) ---
+        // --- Base Stats (先天六维) ---
         {
             id: 'STR', name: '体魄', type: 'int', base: 0, visible: true,
             min: 0, max: 200, // Limit raised for late game
@@ -48,16 +48,28 @@ export const XianxiaConfig: ModuleConfig = {
             color: 'text-red-600'
         },
         {
-            id: 'SOUL', name: '神识', type: 'int', base: 10, visible: true,
-            min: 0, max: 1000,
-            description: '灵魂强度。影响感知范围、神识攻击与抗夺舍能力。',
+            id: 'MND', name: '神识', type: 'int', base: 10, visible: true,
+            min: 0, max: 200,
+            description: '决定法力上限、身法(闪避与出手速度)与会心暴击率，且影响阵法与炼丹等精细修仙百艺。',
             color: 'text-cyan-400'
+        },
+        {
+            id: 'SOUL', name: '元神', type: 'int', base: 10, visible: false,
+            min: 0, max: 1000,
+            description: '隐藏属性。灵魂根基强度。影响抵抗夺舍与元婴出窍的能力。',
+            color: 'text-stone-400'
         },
         {
             id: 'WIL', name: '意志', type: 'int', base: 10, visible: true,
             min: 0, max: 1000,
             description: '心境坚韧度。影响抵抗心魔、幻境与威压的能力。',
             color: 'text-stone-400'
+        },
+        {
+            id: 'DAO', name: '道行', type: 'int', base: 0, visible: true,
+            min: 0, max: 1000,
+            description: '对天地大道的感悟深浅。影响突破极境的概率以及部分高级功法的发挥。',
+            color: 'text-indigo-400'
         },
 
         // --- Survival / Status (状态属性) ---

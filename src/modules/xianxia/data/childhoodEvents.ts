@@ -19,6 +19,19 @@ export const CHILDHOOD_EVENTS: GameEvent[] = [
     { id: 'evt_c_1_6', content: "模仿大人的动作，逗得全家人哈哈大笑。", conditions: [{ type: 'AGE', op: 'GTE', value: 1 }, { type: 'AGE', op: 'LTE', value: 2 }], effect: { CHR: 1, MOOD: 2 } },
     { id: 'evt_c_1_7', content: "不论拿到什么东西都往嘴里塞。", conditions: [{ type: 'AGE', op: 'GTE', value: 1 }, { type: 'AGE', op: 'LTE', value: 2 }], effect: { CON: 1, INT: -1 } },
 
+    // --- 抓周事件 (1岁独占) ---
+    {
+        id: 'evt_c_1_choice_zhuazhou',
+        content: "你满周岁了，父母在桌上摆满了各种物件让你抓周。你摇摇晃晃地爬上桌子...",
+        conditions: [{ type: 'AGE', op: 'EQ', value: 1 }],
+        choices: [
+            { text: "抓向那本书卷", effect: { INT: 3, history: "你紧紧抓着书卷不放，父母高兴地说你将来必定是个读书种子。" } },
+            { text: "握住了那柄木剑", effect: { STR: 2, WIL: 1, history: "你挥舞着木剑咯咯直笑，冥冥中似乎注定了你尚武的一生。" } },
+            { text: "拿起了那个算盘", effect: { LUCK: 1, MONEY: 10, history: "你拨弄着算盘珠子，展现出对商贾之道的本能兴趣。" } },
+            { text: "盯上了一块不知名的破石头", effect: { DAO: 3, POT: 2, history: "你无视了所有光鲜的物件，唯独抓住了用来压纸的一块奇石。父母面面相觑。" } }
+        ]
+    },
+
     // Danger: Illness
     {
         id: 'evt_c_danger_01',
@@ -73,6 +86,16 @@ export const CHILDHOOD_EVENTS: GameEvent[] = [
             { text: "冲上去揍他", effect: { STR: 1, REP: 2, HP: -1, history: "你虽然被打得鼻青脸肿，但成功抢回了布偶。小女孩泣不成声地向你道谢。" } },
             { text: "去叫大人来帮忙", effect: { INT: 1, REP: 1, history: "你跑去找了大人，那个欺负人的孩子被狠狠训了一顿。" } },
             { text: "假装没看见", effect: { MOOD: -2, history: "你低着头走开了，心里有些不是滋味。" } }
+        ]
+    },
+    {
+        id: 'evt_c_3_choice_mystery_monk',
+        content: "村里来了一个疯疯癫癫的和尚，逢人便笑。他在你家讨水喝时，突然盯着你看了很久。",
+        conditions: [{ type: 'AGE', op: 'GTE', value: 3 }, { type: 'AGE', op: 'LTE', value: 5 }],
+        choices: [
+            { text: "恭敬地递上水碗", effect: { KARMA: 3, CHR: 1, history: "和尚笑着摸了摸你的头：'好孩子，结个善缘。'你觉得脑子突然变得清明了些。" } },
+            { text: "害怕地躲在门后", effect: { WIL: -1, history: "和尚摇了摇头，叹息着离开了。" } },
+            { text: "好奇地问他为什么笑", effect: { INT: 1, DAO: 2, history: "和尚收起笑容，肃然答道：'笑世人看不穿，笑红尘皆是梦。'这几句话深深印在了你幼小的心里。" } }
         ]
     },
 
@@ -158,6 +181,16 @@ export const CHILDHOOD_EVENTS: GameEvent[] = [
             { text: "悄悄告诉村长", effect: { KARMA: 2, REP: 1, history: "村长查实后惩罚了王叔。但王叔知道是你告的密后，见你就给白眼。" } },
             { text: "当面质问王叔", effect: { WIL: 2, REP: -1, history: "王叔恼羞成怒骂了你一顿，但之后再也没敢偷了。你年纪虽小，胆子倒不小。" } },
             { text: "当作没看见", effect: { MOOD: -1, history: "多一事不如少一事。但你心里知道，这样做是不对的。" } }
+        ]
+    },
+    {
+        id: 'evt_c_6_choice_found_martial_art',
+        content: "和小伙伴在村后破庙玩捉迷藏时，你在一尊倒塌的泥像肚子里摸到了一卷残破的竹简。",
+        conditions: [{ type: 'AGE', op: 'GTE', value: 6 }, { type: 'AGE', op: 'LTE', value: 9 }],
+        choices: [
+            { text: "悄悄藏起来自己研究", effect: { INT: 2, POT: 1, history: "虽然看不懂上面的古怪文字，但你照着图画比划，感觉力气变大了一些。" } },
+            { text: "拿给村里的老学究看", effect: { REP: 1, WIL: 1, history: "老学究吓了一跳，说是些邪门歪道的打坐法门，让你赶快烧了。你有些遗憾，但也只好照做。" } },
+            { text: "觉得没用，扔在一旁", effect: { LUCK: -1, history: "你嫌它扎手，随手丢在了杂草堆里。或许你错过了什么惊天机缘..." } }
         ]
     },
 
@@ -262,6 +295,17 @@ export const CHILDHOOD_EVENTS: GameEvent[] = [
             { text: "继续和他来往", effect: { CHR: -1, SPD: 2, history: "他教了你很多上树翻墙的本事。虽然声名受损，但你的身手越来越灵活了。" } },
             { text: "疏远他", effect: { WIL: 1, MOOD: -1, history: "你不再理会他。看着他落寞的背影，你心里有些不是滋味，但觉得这是对的。" } },
             { text: "试图劝他改邪归正", effect: { KARMA: 2, REP: 1, history: "你认真地跟他谈了一次。他虽然嘴上不说，但之后偷东西的次数确实少了。" } }
+        ]
+    },
+    {
+        id: 'evt_c_10_choice_black_market',
+        content: "县城里一年一度的黑市开启了，听说里面有卖真正的神仙丹药。你偷偷攒了一些铜板。",
+        conditions: [{ type: 'AGE', op: 'GTE', value: 10 }, { type: 'AGE', op: 'LTE', value: 14 }],
+        choices: [
+            { text: "花光积蓄买一颗'通脉丹'", effect: { MONEY: -10, HP: -20, CON: 2, history: "吃下药后你腹痛如绞，差点死掉。挺过去后，你发现自己的耐力确实变强了。" } },
+            { text: "买一张画废的残缺符箓", effect: { MONEY: -5, INT: 3, DAO: 2, history: "这符箓虽然不能用，但上面的朱砂走势让你对天地灵气有了一丝玄妙的感悟。" } },
+            { text: "太危险了，只是看看", effect: { WIL: 1, MOOD: 1, history: "你冷眼旁观，发现不少人都被骗了。你庆幸自己没有冲动消费。" } },
+            { text: "买便宜的未知种子", effect: { LUCK: 2, MONEY: -2, history: "你买了一颗黑不溜秋的种子，不知道能种出什么。" } }
         ]
     },
 

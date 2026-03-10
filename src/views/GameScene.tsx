@@ -16,6 +16,8 @@ import { MissionLogModal } from '../components/MissionLogModal';
 import { MAIN_QUESTS } from '../data/missions';
 import { getGuidance } from '../utils/guideSystem';
 import { TopBar } from '../components/Layout/TopBar';
+import { BookOpen, Info, ChevronRight } from 'lucide-react';
+import { GameOverOverlay } from '../components/GameOverOverlay';
 
 import type { ActionType } from '../engine/systems/ActionSystem';
 
@@ -112,6 +114,9 @@ export const GameScene = () => {
         <div className="w-full h-screen flex flex-col bg-void overflow-hidden relative">
             {/* ═══════════ Overlays ═══════════ */}
 
+            {/* 死亡结算界面 (Game Over Overlay) */}
+            {!gameState.alive && <GameOverOverlay />}
+
             {/* 战斗界面 (Combat Overlay) */}
             <CombatPanel />
 
@@ -185,11 +190,7 @@ export const GameScene = () => {
                 <div className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col lg:overflow-hidden order-2 lg:order-1">
 
                     {/* 属性区块 */}
-                    <div className="p-4 lg:block hidden">
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-mono text-slate-500 tracking-[0.3em]">五维属性</span>
-                            <div className="flex-1 h-px bg-slate-200"></div>
-                        </div>
+                    <div className="p-3 lg:block hidden h-full flex flex-col">
                         <StatsPanel />
                     </div>
                 </div>
@@ -238,9 +239,7 @@ export const GameScene = () => {
                                     </div>
                                 )}
                             </div>
-                            <svg className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-all duration-300 shrink-0 ${showInfoPanel ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            <ChevronRight className={`w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-all duration-300 shrink-0 ${showInfoPanel ? 'rotate-90' : ''}`} />
                         </button>
 
                         {/* 展开内容 */}
@@ -342,7 +341,7 @@ export const GameScene = () => {
                         {/* Guidance Hint (Above Actions) */}
                         {!currentEvent && (
                             <div className="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded text-xs text-indigo-700 flex items-center gap-2 animate-fade-in">
-                                <span className="shrink-0 font-bold">*</span>
+                                <Info className="w-4 h-4 shrink-0 opacity-70" />
                                 <span>{guidance.subtext}</span>
                             </div>
                         )}
@@ -357,7 +356,9 @@ export const GameScene = () => {
                                 <div className="flex items-center justify-center gap-3 mb-4">
                                     <div className="h-px flex-1 max-w-[60px] bg-gradient-to-r from-transparent to-slate-300"></div>
                                     <div className="flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-500 text-xs">◈</span>
+                                        <span className="w-6 h-6 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-500 text-xs">
+                                            <BookOpen className="w-3.5 h-3.5" />
+                                        </span>
                                         <h4 className="text-lg font-serif font-bold text-slate-800 tracking-widest">{currentEvent.title || '命运的抉择'}</h4>
                                     </div>
                                     <div className="h-px flex-1 max-w-[60px] bg-gradient-to-l from-transparent to-slate-300"></div>
@@ -365,7 +366,7 @@ export const GameScene = () => {
 
                                 {/* 内容区 */}
                                 <div className="bg-slate-50/80 border border-slate-100 rounded-lg px-5 py-4 mb-5">
-                                    <p className="text-sm text-slate-700 leading-relaxed font-serif indent-8">{currentEvent.content}</p>
+                                    <p className="text-sm text-slate-700 leading-relaxed indent-8">{currentEvent.content}</p>
                                 </div>
 
                                 {/* 选项区 */}
@@ -375,7 +376,7 @@ export const GameScene = () => {
                                             <button
                                                 key={i}
                                                 onClick={() => makeChoice(c)}
-                                                className="text-left px-4 py-3 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg text-sm font-serif text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/50 transition-all tracking-wide group flex items-center gap-3"
+                                                className="text-left px-4 py-3 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg text-sm text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/50 transition-all tracking-wide group flex items-center gap-3"
                                             >
                                                 <span className="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-emerald-100 border border-slate-200 group-hover:border-emerald-300 flex items-center justify-center text-[10px] text-slate-400 group-hover:text-emerald-500 shrink-0 transition-colors">
                                                     {String.fromCharCode(65 + i)}
@@ -387,7 +388,7 @@ export const GameScene = () => {
                                     </div>
                                 ) : (
                                     <div className="flex justify-center">
-                                        <button onClick={() => makeChoice({ text: '继续' })} className="px-8 py-2.5 bg-emerald-50 border border-emerald-200 rounded-full text-sm font-serif text-emerald-700 hover:bg-emerald-100 transition-all tracking-widest">
+                                        <button onClick={() => makeChoice({ text: '继续' })} className="px-8 py-2.5 bg-emerald-50 border border-emerald-200 rounded-full text-sm text-emerald-700 hover:bg-emerald-100 transition-all tracking-widest">
                                             继 续
                                         </button>
                                     </div>

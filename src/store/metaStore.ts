@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { META_UPGRADES } from '../data/meta';
 
 interface MetaState {
     karma: number;
@@ -35,8 +36,15 @@ export const useMetaStore = create<MetaStore>((set, get) => ({
 
     purchaseUpgrade: (upgradeId, cost) => {
         const { metaState, saveMeta } = get();
+        const upgradeDef = META_UPGRADES.find(u => u.id === upgradeId);
+
+        if (!upgradeDef) return;
+
         if (metaState.karma >= cost) {
             const currentLevel = metaState.unlockedUpgrades[upgradeId] || 0;
+
+            if (currentLevel >= upgradeDef.maxLevel) return; // Prevent over-upgrade
+
             const newMeta = {
                 ...metaState,
                 karma: metaState.karma - cost,

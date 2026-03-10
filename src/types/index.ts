@@ -166,9 +166,11 @@ export interface NPC {
     id: string;
     name: string;
     gender: 'M' | 'F';
-    relation: string; // 'Father', 'Mother', 'Friend', 'Enemy'
+    relation: string; // 'Father', 'Mother', 'Friend', 'Enemy' (Legacy)
     desc: string;
-    intimacy: number; // 0-100
+    intimacy: number; // 0-100 (Legacy)
+    affinity: number; // -100 to 100 [NEW] Favorability / Hostility
+    relationships: string[]; // e.g. ['ENEMY', 'PARTNER', 'MASTER', 'DISCIPLE'] [NEW]
     // Life
     age: number;
     lifespan: number;
@@ -401,7 +403,7 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
         modifiers: {
             lifespanBonus: 100,
             stats: { MP: 500, HP: 200, ATK: 50, DEF: 30 },
-            attributes: { STR: 20, INT: 10, SPD: 10, SOUL: 10 }
+            attributes: { STR: 20, INT: 10, SPD: 10, MND: 10 }
         },
         breakthrough: { stats: { POT: 15 }, items: ['筑基丹'], probability: 0.4 }
     },
@@ -413,7 +415,7 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
         modifiers: {
             lifespanBonus: 300,
             stats: { MP: 2000, HP: 1000, ATK: 200, DEF: 100 },
-            attributes: { STR: 50, INT: 20, SPD: 30, SOUL: 50 }
+            attributes: { STR: 50, INT: 20, SPD: 30, MND: 50 }
         },
         breakthrough: { stats: { POT: 30, MOOD: 80 }, probability: 0.2 }
     },
@@ -425,7 +427,7 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
         modifiers: {
             lifespanBonus: 800,
             stats: { MP: 10000, HP: 5000, ATK: 1000, DEF: 500 },
-            attributes: { STR: 100, INT: 50, SPD: 100, SOUL: 200 }
+            attributes: { STR: 100, INT: 50, SPD: 100, MND: 200 }
         },
         breakthrough: { stats: { POT: 50, WIL: 50 }, probability: 0.1 }
     },
@@ -437,7 +439,7 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
         modifiers: {
             lifespanBonus: 2000,
             stats: { MP: 50000, HP: 20000, ATK: 5000, DEF: 2000 },
-            attributes: { ALL: 200, SOUL: 500 }
+            attributes: { ALL: 200, MND: 500 }
         },
         breakthrough: { stats: { POT: 80, INT: 80, WIL: 80 }, probability: 0.05 }
     },
@@ -449,7 +451,7 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
         modifiers: {
             lifespanBonus: 5000,
             stats: { MP: 200000, HP: 80000, ATK: 20000, DEF: 8000 },
-            attributes: { ALL: 500, SOUL: 1000 }
+            attributes: { ALL: 500, MND: 1000 }
         },
         breakthrough: { stats: { POT: 120, INT: 120, WIL: 120 }, probability: 0.03 }
     },
@@ -461,7 +463,7 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
         modifiers: {
             lifespanBonus: 10000,
             stats: { MP: 800000, HP: 300000, ATK: 80000, DEF: 30000 },
-            attributes: { ALL: 1000, SOUL: 2000 }
+            attributes: { ALL: 1000, MND: 2000 }
         },
         breakthrough: { stats: { POT: 200, INT: 200, WIL: 200 }, probability: 0.01 }
     },
@@ -473,7 +475,7 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
         modifiers: {
             lifespanBonus: 50000,
             stats: { MP: 5000000, HP: 2000000, ATK: 500000, DEF: 200000 },
-            attributes: { ALL: 3000, SOUL: 5000 }
+            attributes: { ALL: 3000, MND: 5000 }
         },
         breakthrough: { stats: { POT: 500, INT: 500, WIL: 500 }, probability: 0.005 }
     }
@@ -482,4 +484,4 @@ export const CULTIVATION_REALMS: RealmDefinition[] = [
 // Legacy export for compatibility
 export const REALMS = CULTIVATION_REALMS.map(r => r.name);
 
-export type Tab = 'TALENTS' | 'EVENTS' | 'STATS' | 'REALMS' | 'QUESTS';
+export type Tab = 'TALENTS' | 'EVENTS' | 'STATS' | 'REALMS' | 'QUESTS' | 'SYSTEMS';

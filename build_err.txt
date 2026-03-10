@@ -1,0 +1,34 @@
+﻿src/data/events.ts(7,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(15,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(23,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(33,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(46,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(57,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(67,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(75,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(88,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(96,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(107,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(123,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(133,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(141,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(153,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(182,9): error TS2353: Object literal may only specify known properties, and 'trigger' does not exist in type 'GameEvent'.
+src/data/events.ts(193,9): error TS2353: Object literal may only specify known properties, and 'trigger' does not exist in type 'GameEvent'.
+src/data/events.ts(209,9): error TS2353: Object literal may only specify known properties, and 'trigger' does not exist in type 'GameEvent'.
+src/data/events.ts(225,9): error TS2353: Object literal may only specify known properties, and 'trigger' does not exist in type 'GameEvent'.
+src/data/events.ts(241,9): error TS2353: Object literal may only specify known properties, and 'trigger' does not exist in type 'GameEvent'.
+src/data/events.ts(253,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(278,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(289,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(313,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(341,9): error TS2353: Object literal may only specify known properties, and 'age' does not exist in type 'GameEvent'.
+src/data/events.ts(370,9): error TS2353: Object literal may only specify known properties, and 'reqFlags' does not exist in type 'GameEvent'.
+src/data/events.ts(390,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(400,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(409,17): error TS2561: Object literal may only specify known properties, but 'condition' does not exist in type 'EventChoice'. Did you mean to write 'conditions'?
+src/data/events.ts(423,9): error TS2353: Object literal may only specify known properties, and 'reqFlags' does not exist in type 'GameEvent'.
+src/engine/EventPool.ts(166,20): error TS6133: 'source' is declared but its value is never read.
+src/engine/EventValidator.ts(8,26): error TS6196: 'Condition' is declared but never used.
+src/engine/EventValidator.ts(8,37): error TS6196: 'Effect' is declared but never used.
+src/engine/EventValidator.ts(8,45): error TS6196: 'EventChoice' is declared but never used.

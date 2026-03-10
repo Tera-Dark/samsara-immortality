@@ -104,12 +104,32 @@ const _EVENTS_MORTAL: GameEvent[] = [
         content: "你在一处悬崖下救了一位重伤垂死的老者，老者看了你一眼，叹道：“罢罢罢，这也算是一场造化。”",
         choices: [
             {
-                text: "跪地磕头拜师",
+                text: "重重磕头，恳求拜师",
                 effect: {
                     flags: ['HAS_CULTIVATION_METHOD'],
                     items: ['qi_gathering_pill'],
-                    KARMA: 10,
-                    history: "老者传了你一套残缺心法和一瓶丹药后便坐化了。你将其安葬，心中发誓定要踏上仙途。"
+                    KARMA: 5,
+                    history: "老者叹了口气，传了你一套残缺心法和一瓶丹药后便坐化了。你将其安葬，心中发誓定要踏上仙途。"
+                }
+            },
+            {
+                text: "见利忘义，夺走老者的储物袋",
+                effect: {
+                    flags: ['HAS_CULTIVATION_METHOD'],
+                    items: ['qi_gathering_pill', 'foundation_pill'],
+                    KARMA: -50,
+                    MOOD: -20,
+                    history: "你冷眼旁观老者咽气，随后夺走了他的遗物。你得到了心法和珍贵的丹药，但心中却留下了挥之不去的阴影。"
+                }
+            },
+            {
+                text: "耗尽心力尝试救治老者",
+                conditions: [{ type: 'STAT', target: 'INT', op: 'GTE', value: 15 }],
+                effect: {
+                    flags: ['HAS_CULTIVATION_METHOD'],
+                    KARMA: 20,
+                    DAO: 5,
+                    history: "你尝试用采药学到的知识救治他。虽然老者最终还是仙去了，但他临终前清醒了一瞬，将毕生感悟通过神念传给了你。"
                 }
             }
         ]

@@ -2,6 +2,7 @@
 import { useGameStore } from '../../store/gameStore';
 import { ITEMS } from '../../data/items';
 import type { ItemType } from '../../types/itemTypes';
+import { User, Sword, Shield, Gem } from 'lucide-react';
 
 interface InventoryPanelProps {
     onClose: () => void;
@@ -98,8 +99,8 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onClose }) => {
                     }}
                     style={{ borderColor: isSelected ? undefined : (item ? RARITY_COLORS[item.rarity] : undefined) }}
                 >
-                    <div className="text-2xl mr-4 opacity-80">
-                        {item ? item.icon : iconFallback}
+                    <div className="text-2xl mr-4 opacity-80 flex items-center">
+                        {item ? item.icon : (iconFallback === 'sword' ? <Sword className="w-6 h-6 text-slate-400" /> : iconFallback === 'shield' ? <Shield className="w-6 h-6 text-slate-400" /> : <Gem className="w-6 h-6 text-slate-400" />)}
                     </div>
                     <div className="flex-1 overflow-hidden">
                         {item ? (
@@ -128,8 +129,8 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onClose }) => {
                     {/* Left Panel: Character & Equipment */}
                     <div className="w-64 border-r border-slate-200 bg-slate-800/20 p-6 flex flex-col overflow-y-auto">
                         <div className="text-center mb-6">
-                            <div className="w-24 h-24 mx-auto rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-4xl mb-3 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                                👤
+                            <div className="w-24 h-24 mx-auto rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                                <User className="w-10 h-10 text-slate-400" />
                             </div>
                             <h3 className="text-lg font-bold text-slate-700">{gameState.name}</h3>
                             <p className="text-xs text-slate-400 mt-1">
@@ -137,9 +138,9 @@ export const InventoryPanel: React.FC<InventoryPanelProps> = ({ onClose }) => {
                             </p>
                         </div>
 
-                        {renderEquipSlot('武器 (Weapon)', 'weapon', '🗡️')}
-                        {renderEquipSlot('防具 (Armor)', 'armor', '👕')}
-                        {renderEquipSlot('饰品 (Accessory)', 'accessory', '💍')}
+                        {renderEquipSlot('武器', 'weapon', 'sword')}
+                        {renderEquipSlot('防具', 'armor', 'shield')}
+                        {renderEquipSlot('饰品', 'accessory', 'gem')}
                     </div>
 
                     {/* Middle Panel: Inventory Grid */}

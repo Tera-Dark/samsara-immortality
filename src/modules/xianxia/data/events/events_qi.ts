@@ -391,6 +391,57 @@ const _EVENTS_QI: GameEvent[] = [
                 effect: { MONEY: -50, MOOD: -20, history: "魔门弟子势大，你只能交出大半身家保命。" }
             }
         ]
+    },
+    {
+        id: "EVT_QI_ANCIENT_RUIN",
+        title: "上古遗迹现世",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'AGE', op: 'GTE', value: 20 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.04,
+        content: "你在一处荒原之上，忽然天地变色，狂风大作。地底轰然裂开一道深渊，深渊下方隐隐显露出一座流转着古老阵纹的庞大地下宫殿。这是一个未被发掘的上古遗迹！入口处迷雾重重，散发着骇人的威压。",
+        choices: [
+            {
+                text: "富贵险中求！果断闯入",
+                conditions: [{ type: 'STAT', target: 'WIL', op: 'GTE', value: 30 }, { type: 'STAT', target: 'LUCK', op: 'GTE', value: 15 }],
+                effect: {
+                    items: ['foundation_pill', 'spirit_herb'],
+                    MONEY: 300,
+                    EXP: 500,
+                    DAO: 10,
+                    history: "你顶着惊人的威压冲入遗迹外围，凭着过人气运避开重重杀阵，夺得了几件珍稀法宝和丹药，满载而归！"
+                }
+            },
+            {
+                text: "富贵险中求！(底蕴不足)",
+                conditions: [{ type: 'STAT', target: 'WIL', op: 'LT', value: 30 }],
+                effect: {
+                    HP: -80,
+                    MOOD: -50,
+                    history: "你刚踏入迷雾，便被上古杀阵的一丝罡风刮中，肉身几近崩溃，只能仓皇逃出，修养数载才堪堪稳住伤势。"
+                }
+            },
+            {
+                text: "冷静旁观，寻找遗漏",
+                conditions: [{ type: 'STAT', target: 'INT', op: 'GTE', value: 25 }],
+                effect: {
+                    MONEY: 100,
+                    INT: 5,
+                    DAO: 3,
+                    history: "你没有被贪欲冲昏头脑。在各大宗门高手赶来火拼时，你聪明地在周边捡拾被破阵余波震飞的零星宝物，并发了一笔小财。"
+                }
+            },
+            {
+                text: "绝不涉险，立刻远遁",
+                effect: {
+                    WIL: 1,
+                    MOOD: 10,
+                    history: "这种大机缘往往伴随着天大的杀机。你头也不回地御剑离开，虽然错过了宝物，但保全了性命。"
+                }
+            }
+        ]
     }
 ];
 

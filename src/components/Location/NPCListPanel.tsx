@@ -4,16 +4,12 @@ import type { WorldNPC } from '../../types/worldTypes';
 import { REALMS } from '../../types';
 
 export const NPCListPanel: React.FC = () => {
-    const { gameState } = useGameStore();
+    const { gameState, interactNPC } = useGameStore();
     const locationId = gameState.location;
 
     const npcsHere = gameState.world?.worldNPCs.filter((npc: WorldNPC) => npc.currentLocationId === locationId && npc.alive) || [];
 
     const [selectedNPC, setSelectedNPC] = useState<WorldNPC | null>(null);
-
-    const handleTalk = (npc: WorldNPC) => {
-        alert(`【${npc.name}】说："贫道这厢有礼了，道友有何贵干？"`);
-    };
 
     if (npcsHere.length === 0) {
         return (
@@ -63,21 +59,19 @@ export const NPCListPanel: React.FC = () => {
                                 <div className="flex gap-1.5">
                                     <button
                                         className="flex-1 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 hover:border-sky-300 rounded text-xs transition-colors"
-                                        onClick={(e) => { e.stopPropagation(); handleTalk(npc); }}
+                                        onClick={(e) => { e.stopPropagation(); interactNPC(npc, 'TALK'); setSelectedNPC(null); }}
                                     >
                                         交谈
                                     </button>
                                     <button
-                                        className="flex-1 py-1 bg-slate-50 text-slate-400 border border-slate-200 rounded text-xs cursor-not-allowed"
-                                        onClick={(e) => { e.stopPropagation(); }}
-                                        title="暂未开放"
+                                        className="flex-1 py-1 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 hover:border-amber-300 rounded text-xs transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); interactNPC(npc, 'SPAR'); setSelectedNPC(null); }}
                                     >
                                         切磋
                                     </button>
                                     <button
-                                        className="flex-1 py-1 bg-red-50 text-red-400 border border-red-200 rounded text-xs cursor-not-allowed"
-                                        onClick={(e) => { e.stopPropagation(); }}
-                                        title="暂未开放"
+                                        className="flex-1 py-1 bg-red-50 hover:bg-red-100 text-red-500 border border-red-200 hover:border-red-300 rounded text-xs transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); interactNPC(npc, 'KILL'); setSelectedNPC(null); }}
                                     >
                                         截杀
                                     </button>

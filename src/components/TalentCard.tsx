@@ -1,4 +1,5 @@
 ﻿import type { Talent } from '../types';
+import { Circle, Hexagon, Sparkles, Star, Sun, Crown, Check } from 'lucide-react';
 
 interface TalentCardProps {
     talent: Talent;
@@ -19,7 +20,7 @@ const GRADE_STYLES = {
         labelBg: 'bg-slate-100 text-slate-600 border border-slate-200',
         titleColor: 'text-slate-700',
         descColor: 'text-slate-500',
-        icon: '◇',
+        icon: Circle,
         accent: 'bg-slate-400',
     },
     2: {
@@ -33,7 +34,7 @@ const GRADE_STYLES = {
         labelBg: 'bg-sky-50 text-sky-700 border border-sky-200',
         titleColor: 'text-sky-700',
         descColor: 'text-sky-600/70',
-        icon: '◆',
+        icon: Hexagon,
         accent: 'bg-sky-500',
     },
     3: {
@@ -47,7 +48,7 @@ const GRADE_STYLES = {
         labelBg: 'bg-purple-50 text-purple-700 border border-purple-200',
         titleColor: 'text-purple-700',
         descColor: 'text-purple-600/70',
-        icon: '✦',
+        icon: Sparkles,
         accent: 'bg-purple-500',
     },
     4: {
@@ -61,7 +62,7 @@ const GRADE_STYLES = {
         labelBg: 'bg-amber-50 text-amber-700 border border-amber-200',
         titleColor: 'text-amber-700',
         descColor: 'text-amber-600/70',
-        icon: '★',
+        icon: Star,
         accent: 'bg-amber-500',
     },
     5: {
@@ -75,7 +76,7 @@ const GRADE_STYLES = {
         labelBg: 'bg-orange-50 text-orange-700 border border-orange-200',
         titleColor: 'text-orange-700',
         descColor: 'text-orange-600/70',
-        icon: '☀',
+        icon: Sun,
         accent: 'bg-orange-500',
     },
     6: {
@@ -89,13 +90,14 @@ const GRADE_STYLES = {
         labelBg: 'bg-rose-50 text-rose-700 border border-rose-200',
         titleColor: 'text-rose-700',
         descColor: 'text-rose-600/70',
-        icon: '👑',
+        icon: Crown,
         accent: 'bg-rose-500',
     },
 } as const;
 
 export const TalentCard = ({ talent, selected, onClick }: TalentCardProps) => {
     const style = GRADE_STYLES[talent.grade as keyof typeof GRADE_STYLES] || GRADE_STYLES[1];
+    const IconComponent = style.icon;
 
     return (
         <div
@@ -112,34 +114,32 @@ export const TalentCard = ({ talent, selected, onClick }: TalentCardProps) => {
             `}
         >
             {/* 顶部：品阶标签 + 选中标记 */}
-            <div className="flex items-center justify-between mb-3">
-                <div className={`text-xs font-mono px-2.5 py-1 rounded-md ${style.labelBg} tracking-wider flex items-center gap-1 text-outlined`}>
-                    <span>{style.icon}</span>
+            <div className="flex items-center justify-between mb-4">
+                <div className={`text-sm font-mono px-3 py-1.5 rounded-md ${style.labelBg} tracking-wider flex items-center gap-1.5 text-outlined`}>
+                    <IconComponent className="w-4 h-4" strokeWidth={2} />
                     <span>{style.label}</span>
                 </div>
                 {selected && (
-                    <div className="flex items-center gap-1.5 text-emerald-600 animate-fade-in">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+                    <div className="flex items-center gap-1.5 text-emerald-600 animate-fade-in bg-white/50 px-2 py-0.5 rounded-md backdrop-blur-sm border border-emerald-100">
+                        <Check className="w-4 h-4" strokeWidth={2.5} />
                         <span className="text-xs font-serif font-bold tracking-wider">已选</span>
                     </div>
                 )}
             </div>
 
             {/* 命格名称 */}
-            <h3 className={`text-xl font-bold mb-3 tracking-widest leading-tight ${style.titleColor} transition-colors text-outlined-strong`} style={{ fontFamily: '"Ma Shan Zheng", serif' }}>
+            <h3 className={`text-2xl font-bold mb-3 tracking-widest leading-tight ${style.titleColor} transition-colors text-outlined-strong`} style={{ fontFamily: '"Ma Shan Zheng", serif' }}>
                 {talent.name}
             </h3>
 
             {/* 命格描述 */}
-            <p className={`text-sm ${style.descColor} font-serif leading-relaxed flex-1 group-hover:opacity-100 transition-opacity text-outlined`}>
+            <p className={`text-base ${style.descColor} leading-relaxed flex-1 transition-opacity text-outlined`}>
                 {talent.description}
             </p>
 
             {/* 底部装饰线 */}
-            <div className="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between">
-                <span className="text-xs font-mono text-slate-400 tracking-wider"></span>
+            <div className="mt-5 pt-4 border-t border-slate-200/80 flex items-center justify-between">
+                <span className="text-sm font-mono text-slate-400 tracking-wider"></span>
                 <div className="flex gap-1.5">
                     {Array.from({ length: talent.grade }).map((_, i) => (
                         <div

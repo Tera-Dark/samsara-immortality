@@ -59,9 +59,9 @@ export function generateNPC(relation: string, gender: 'M' | 'F'): any {
     const lifespan = 60 + Math.floor(Math.random() * 40);
 
     // Random Stats
-    // Random Stats
     const attributes: Record<string, number> = {
         STR: 10 + Math.floor(Math.random() * 20),
+        MND: 10 + Math.floor(Math.random() * 20),
         INT: 10 + Math.floor(Math.random() * 20),
         CHR: 10 + Math.floor(Math.random() * 20),
         MNY: 10 + Math.floor(Math.random() * 20),
@@ -89,29 +89,25 @@ export function generateNPC(relation: string, gender: 'M' | 'F'): any {
 }
 
 export function deriveBattleStats(attributes: Record<string, number>, realmIdx: number): BattleStats {
-    // Basic Algo requested by user
-    // HP = STR * 20
-    // ATK = STR * 2 + INT * 3
-    // DEF = STR * 3
-    // SPD = INT * 1 + LUCK * 0.5
-    // Realm Bonus: Simple multiplier or flat add? Flat add is safer.
+    // 六维核心换算公式 (Six Dimensions Core)
     const realmBonus = realmIdx * 100;
 
     // Safely access attributes
-    const STR = attributes.STR || 0;
-    const INT = attributes.INT || 0;
-    const POT = attributes.POT || attributes.ROOT || 0;
-    const LUCK = attributes.LUCK || 0;
+    const STR = attributes.STR || 0; // 体魄: 影响血量、防御、物理攻击
+    const MND = attributes.MND || 0; // 神识: 影响法力、身法、暴击率
+    const INT = attributes.INT || 0; // 悟性: 影响修炼速度、突破概率
+    const POT = attributes.POT || attributes.ROOT || 0; // 资质: 灵气亲和，增补部分法力和法术攻击
+    const LUCK = attributes.LUCK || 0; // 气运: 影响极少数特殊概率补正
 
     // Base calculation
     const baseStats: BattleStats = {
-        MAX_HP: Math.floor(STR * 10 + realmBonus * 10),
-        MAX_MP: Math.floor(INT * 10 + POT * 5 + realmBonus * 2),
-        ATK: Math.floor(STR * 2 + POT * 1 + realmBonus * 1),
-        DEF: Math.floor(STR * 3 + POT * 1 + realmBonus * 0.5),
-        SPD: Math.floor(INT * 1 + LUCK * 0.5 + realmBonus * 0.2),
-        CRIT: Math.floor(LUCK * 0.5 + INT * 0.1),
-        MOVE_SPEED: Math.floor(20 + (INT * 0.5) + (STR * 0.2) + (realmIdx * 10)) // Base 20 + bonuses
+        MAX_HP: Math.floor(STR * 20 + realmBonus * 10),
+        MAX_MP: Math.floor(MND * 15 + POT * 5 + INT * 2 + realmBonus * 5),
+        ATK: Math.floor(STR * 2 + POT * 2 + INT * 1 + realmBonus * 1),
+        DEF: Math.floor(STR * 3 + realmBonus * 0.5),
+        SPD: Math.floor(MND * 2 + LUCK * 0.5 + realmBonus * 0.2),
+        CRIT: Math.floor(MND * 0.2 + LUCK * 0.1),
+        MOVE_SPEED: Math.floor(20 + (MND * 0.5) + (STR * 0.2) + (realmIdx * 10)) // Base 20 + bonuses
     };
     return baseStats;
 }

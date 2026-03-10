@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo } from 'react';
+import * as LucideIcons from 'lucide-react';
 import type { GameEvent, Condition } from '../../types';
 
 interface FateGridProps {
@@ -7,11 +8,11 @@ interface FateGridProps {
 
 // 事件类型配色 (亮色主题)
 const EVENT_TYPE_CONFIG: Record<string, { color: string, bg: string, border: string, label: string, icon: string }> = {
-    MAIN: { color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', label: '主线', icon: '⚔' },
-    CRISIS: { color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', label: '危机', icon: '⚡' },
-    OPPORTUNITY: { color: 'text-sky-700', bg: 'bg-sky-50', border: 'border-sky-200', label: '机缘', icon: '✦' },
-    RANDOM: { color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', label: '随机', icon: '◎' },
-    DEFAULT: { color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', label: '事件', icon: '◈' },
+    MAIN: { color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', label: '主线', icon: 'Swords' },
+    CRISIS: { color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', label: '危机', icon: 'Zap' },
+    OPPORTUNITY: { color: 'text-sky-700', bg: 'bg-sky-50', border: 'border-sky-200', label: '机缘', icon: 'Sparkles' },
+    RANDOM: { color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', label: '随机', icon: 'HelpCircle' },
+    DEFAULT: { color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', label: '事件', icon: 'FileText' },
 };
 
 const getTypeConfig = (evt: GameEvent) => {
@@ -49,11 +50,17 @@ const groupEvent = (evt: GameEvent): GroupKey => {
 };
 
 const GROUP_LABELS: Record<GroupKey, { label: string, icon: string, color: string }> = {
-    MAIN: { label: '主线事件', icon: '⚔', color: 'text-amber-700' },
-    CRISIS: { label: '危机灾厄', icon: '⚡', color: 'text-rose-700' },
-    OPPORTUNITY: { label: '天降机缘', icon: '✦', color: 'text-sky-700' },
-    RANDOM: { label: '随机杂闻', icon: '◎', color: 'text-slate-600' },
-    OTHER: { label: '其他事件', icon: '◈', color: 'text-emerald-700' },
+    MAIN: { label: '主线事件', icon: 'Swords', color: 'text-amber-700' },
+    CRISIS: { label: '危机灾厄', icon: 'Zap', color: 'text-rose-700' },
+    OPPORTUNITY: { label: '天降机缘', icon: 'Sparkles', color: 'text-sky-700' },
+    RANDOM: { label: '随机杂闻', icon: 'HelpCircle', color: 'text-slate-600' },
+    OTHER: { label: '其他事件', icon: 'FileText', color: 'text-emerald-700' },
+};
+
+const renderIcon = (iconName: string, className?: string) => {
+    const IconComp = LucideIcons[iconName as keyof typeof LucideIcons] as React.ElementType;
+    if (!IconComp) return null;
+    return <IconComp className={className} strokeWidth={1.5} />;
 };
 
 const GROUP_ORDER: GroupKey[] = ['MAIN', 'CRISIS', 'OPPORTUNITY', 'RANDOM', 'OTHER'];
@@ -128,7 +135,7 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="搜索事件名称、ID 或内容..."
-                        className="w-full px-4 py-2.5 pl-10 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200 transition-all font-serif"
+                        className="w-full px-4 py-3 pl-10 bg-white border border-slate-200 rounded-lg text-base text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200 transition-all font-serif"
                     />
                     <svg className="absolute left-3 top-3 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -140,7 +147,7 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as 'age' | 'name' | 'type')}
-                        className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 font-serif focus:outline-none focus:border-emerald-400"
+                        className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 font-serif focus:outline-none focus:border-emerald-400"
                     >
                         <option value="age">按年龄排序</option>
                         <option value="name">按名称排序</option>
@@ -148,7 +155,7 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                     </select>
 
                     {/* 统计 */}
-                    <div className="text-xs text-slate-400 font-mono">
+                    <div className="text-sm text-slate-400 font-mono">
                         {filteredEvents.length}/{events.length}
                     </div>
                 </div>
@@ -158,9 +165,9 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
             <div className="flex flex-wrap gap-2 mb-6">
                 <button
                     onClick={() => setActiveGroupFilter('ALL')}
-                    className={`px-4 py-1.5 rounded-full text-xs font-serif tracking-wider border transition-all ${activeGroupFilter === 'ALL'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    className={`px-4 py-2 rounded-full text-sm font-serif tracking-wider border transition-all ${activeGroupFilter === 'ALL'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                         }`}
                 >
                     全部 ({events.length})
@@ -169,12 +176,12 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                     <button
                         key={gk}
                         onClick={() => setActiveGroupFilter(gk === activeGroupFilter ? 'ALL' : gk)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-serif tracking-wider border transition-all ${activeGroupFilter === gk
-                                ? `${EVENT_TYPE_CONFIG[gk]?.bg || 'bg-emerald-50'} ${EVENT_TYPE_CONFIG[gk]?.color || 'text-emerald-700'} ${EVENT_TYPE_CONFIG[gk]?.border || 'border-emerald-200'}`
-                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                        className={`px-4 py-2 rounded-full text-sm font-serif tracking-wider border transition-all flex items-center gap-1.5 ${activeGroupFilter === gk
+                            ? `${EVENT_TYPE_CONFIG[gk]?.bg || 'bg-emerald-50'} ${EVENT_TYPE_CONFIG[gk]?.color || 'text-emerald-700'} ${EVENT_TYPE_CONFIG[gk]?.border || 'border-emerald-200'}`
+                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                             }`}
                     >
-                        {GROUP_LABELS[gk].icon} {GROUP_LABELS[gk].label} ({stats[gk]})
+                        {renderIcon(GROUP_LABELS[gk].icon, "w-3.5 h-3.5 inline-block -mt-0.5")} {GROUP_LABELS[gk].label} ({stats[gk]})
                     </button>
                 ))}
             </div>
@@ -185,11 +192,11 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                     <div key={group.key}>
                         {/* 分组标题 */}
                         <div className="flex items-center gap-3 mb-4">
-                            <span className={`text-xl ${GROUP_LABELS[group.key].color}`}>{GROUP_LABELS[group.key].icon}</span>
-                            <h3 className={`text-lg font-serif font-bold tracking-wider ${GROUP_LABELS[group.key].color}`}>
+                            <span className={`text-xl ${GROUP_LABELS[group.key].color}`}>{renderIcon(GROUP_LABELS[group.key].icon, "w-5 h-5")}</span>
+                            <h3 className={`text-xl font-serif font-bold tracking-wider flex items-center gap-2 ${GROUP_LABELS[group.key].color}`}>
                                 {GROUP_LABELS[group.key].label}
                             </h3>
-                            <span className="text-xs text-slate-400 font-mono">({group.events.length})</span>
+                            <span className="text-sm text-slate-400 font-mono">({group.events.length})</span>
                             <div className="flex-1 h-px bg-slate-200"></div>
                         </div>
 
@@ -212,34 +219,34 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                                     >
                                         {/* 头部：类型标签 + 年龄 */}
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${config.bg} ${config.color} ${config.border} border font-serif`}>
-                                                {config.icon} {config.label}
+                                            <span className={`text-xs px-2.5 py-0.5 rounded-full flex items-center gap-1 ${config.bg} ${config.color} ${config.border} border font-serif`}>
+                                                {renderIcon(config.icon, "w-3 h-3")} {config.label}
                                             </span>
                                             {age !== undefined && (
-                                                <span className="text-[10px] text-slate-400 font-mono">{age}岁</span>
+                                                <span className="text-xs text-slate-400 font-mono">{age}岁</span>
                                             )}
                                         </div>
 
                                         {/* 事件名 */}
-                                        <h4 className="text-sm font-serif font-bold text-slate-800 mb-1 truncate group-hover:text-emerald-700 transition-colors">
+                                        <h4 className="text-base font-serif font-bold text-slate-800 mb-2 truncate group-hover:text-emerald-700 transition-colors">
                                             {evt.title || evt.id}
                                         </h4>
 
                                         {/* 内容预览 */}
-                                        <p className="text-[11px] text-slate-500 line-clamp-2 mb-2 leading-relaxed">
+                                        <p className="text-sm text-slate-500 line-clamp-2 mb-3 leading-relaxed">
                                             {evt.content || '暂无描述'}
                                         </p>
 
                                         {/* 底部信息 */}
-                                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                        <div className="flex items-center gap-2 text-xs text-slate-400">
                                             {choiceCount > 0 && (
                                                 <span className="flex items-center gap-1">
-                                                    <span className="text-emerald-500">◇</span> {choiceCount}个选项
+                                                    {renderIcon("CheckCircle2", "w-3 h-3 text-emerald-500")} {choiceCount}个选项
                                                 </span>
                                             )}
                                             {evt.conditions && evt.conditions.length > 0 && (
                                                 <span className="flex items-center gap-1">
-                                                    <span className="text-amber-500">⊙</span> {evt.conditions.length}条件
+                                                    {renderIcon("ShieldAlert", "w-3 h-3 text-amber-500")} {evt.conditions.length}条件
                                                 </span>
                                             )}
                                             <span className="font-mono opacity-50 ml-auto truncate max-w-[80px]">{evt.id}</span>
@@ -253,9 +260,9 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
 
                 {filteredEvents.length === 0 && (
                     <div className="text-center py-16">
-                        <div className="text-4xl mb-4 text-slate-300">◈</div>
-                        <div className="text-slate-400 font-serif">未找到匹配的事件</div>
-                        <div className="text-xs text-slate-400 mt-1">尝试更改搜索条件或分类筛选</div>
+                        <div className="text-4xl mb-4 text-slate-300 flex justify-center">{renderIcon("SearchX", "w-12 h-12")}</div>
+                        <div className="text-slate-400 font-serif text-lg">未找到匹配的事件</div>
+                        <div className="text-sm text-slate-400 mt-2">尝试更改搜索条件或分类筛选</div>
                     </div>
                 )}
             </div>
@@ -268,63 +275,63 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                         onClick={e => e.stopPropagation()}
                     >
                         {/* 顶部 ID + 年龄标签 */}
-                        <div className="absolute -top-3 -left-3 bg-slate-50 px-3 py-1 border border-slate-200 text-xs font-mono text-slate-400 rounded">
+                        <div className="absolute -top-3 -left-3 bg-slate-50 px-3 py-1 border border-slate-200 text-sm font-mono text-slate-400 rounded shadow-sm">
                             {selectedEvent.id}
                         </div>
                         <div className="absolute top-4 right-4">
                             {(() => {
                                 const age = getEventAge(selectedEvent); return age !== undefined ? (
-                                    <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{age}岁</span>
+                                    <span className="text-sm font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded shadow-sm">{age}岁</span>
                                 ) : null;
                             })()}
                         </div>
 
                         {/* 标题 */}
-                        <h2 className={`text-2xl font-bold font-serif mb-2 ${getTypeConfig(selectedEvent).color}`}>
+                        <h2 className={`text-3xl font-bold font-serif mb-3 tracking-wider ${getTypeConfig(selectedEvent).color}`}>
                             {selectedEvent.title}
                         </h2>
 
                         {/* 标签 */}
-                        <div className="flex gap-2 mb-5">
-                            <span className={`text-xs px-2.5 py-1 rounded-full border ${getTypeConfig(selectedEvent).border} ${getTypeConfig(selectedEvent).color} ${getTypeConfig(selectedEvent).bg}`}>
-                                {getTypeConfig(selectedEvent).icon} {getTypeConfig(selectedEvent).label}
+                        <div className="flex gap-2 mb-6">
+                            <span className={`text-sm px-3 py-1.5 flex items-center gap-1.5 rounded-full border ${getTypeConfig(selectedEvent).border} ${getTypeConfig(selectedEvent).color} ${getTypeConfig(selectedEvent).bg}`}>
+                                {renderIcon(getTypeConfig(selectedEvent).icon, "w-4 h-4 -mt-0.5")} {getTypeConfig(selectedEvent).label}
                             </span>
                         </div>
 
                         {/* 触发条件 */}
                         {selectedEvent.conditions && selectedEvent.conditions.length > 0 && (
-                            <div className="mb-5 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <div className="text-[10px] text-slate-400 font-mono mb-1.5 tracking-wider">触发条件</div>
-                                <div className="text-xs text-slate-600 font-mono">{formatConditions(selectedEvent.conditions)}</div>
+                            <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                <div className="text-xs text-slate-400 font-mono mb-2 tracking-widest text-[10px] uppercase">触发条件</div>
+                                <div className="text-sm text-slate-600 font-mono">{formatConditions(selectedEvent.conditions)}</div>
                             </div>
                         )}
 
                         {/* 内容 */}
-                        <p className="text-slate-700 leading-relaxed text-base mb-6 font-serif">
+                        <p className="text-slate-700 leading-relaxed text-lg mb-8 font-serif">
                             {selectedEvent.content}
                         </p>
 
                         {/* 选项/效果 */}
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {selectedEvent.choices ? (
-                                <div className="space-y-2">
-                                    <div className="text-[10px] text-slate-400 font-mono tracking-wider mb-2">分支选项</div>
+                                <div className="space-y-3">
+                                    <div className="text-xs text-slate-400 font-mono tracking-wider mb-2 uppercase text-[10px]">分支选项</div>
                                     {selectedEvent.choices.map((c, i) => (
-                                        <div key={i} className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-sm text-slate-700 font-bold font-serif">{c.text}</span>
-                                                {c.conditions && <span className="text-[10px] text-amber-600 font-mono">{formatConditions(c.conditions)}</span>}
+                                        <div key={i} className="p-4 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors shadow-sm">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-base text-slate-700 font-bold font-serif">{c.text}</span>
+                                                {c.conditions && <span className="text-xs text-amber-600 font-mono bg-amber-50 px-1 border border-amber-100 rounded">{formatConditions(c.conditions)}</span>}
                                             </div>
-                                            <div className="text-[10px] text-slate-500 font-mono">
+                                            <div className="text-xs text-slate-500 font-mono p-1.5 bg-white border border-slate-200 rounded">
                                                 {JSON.stringify(c.effect).replace(/["{}]/g, '').replace(/,/g, ', ')}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : selectedEvent.effect && (
-                                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                    <div className="text-[10px] text-slate-400 font-mono mb-1 tracking-wider">效果</div>
-                                    <div className="text-xs text-slate-600 font-mono">
+                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm">
+                                    <div className="text-xs text-slate-400 font-mono mb-2 tracking-wider uppercase text-[10px]">效果</div>
+                                    <div className="text-sm text-slate-600 font-mono p-2 bg-white border border-slate-200 rounded">
                                         {JSON.stringify(selectedEvent.effect).replace(/["{}]/g, '').replace(/,/g, ', ')}
                                     </div>
                                 </div>
@@ -332,7 +339,7 @@ export const FateGrid: React.FC<FateGridProps> = ({ events }) => {
                         </div>
 
                         <button
-                            className="mt-6 w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors text-sm font-serif"
+                            className="mt-8 w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-base font-serif font-bold shadow-sm"
                             onClick={() => setSelectedEvent(null)}
                         >
                             关闭

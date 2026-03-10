@@ -4,6 +4,13 @@ import { useUIStore } from '../store/uiStore';
 import { REALMS, FATE_GRADE_COLORS, FATE_GRADE_NAMES } from '../types';
 import type { FateGrade, FateEntry, FortuneBuff } from '../types';
 import { XianxiaConfig } from '../modules/xianxia/config';
+import * as LucideIcons from 'lucide-react';
+
+const renderIcon = (iconName: string, className?: string) => {
+    const IconComp = LucideIcons[iconName as keyof typeof LucideIcons] as React.ElementType;
+    if (!IconComp) return null;
+    return <IconComp className={className} strokeWidth={1.5} />;
+};
 
 // ─── 常量 ───
 const BATTLE_MAP: Record<string, string> = {
@@ -17,18 +24,18 @@ const STAT_LABELS: Record<string, string> = {
 };
 
 const TABS_SELF = [
-    { id: 'ATTR', label: '属性', icon: '◇' },
-    { id: 'FATE', label: '命格', icon: '☆' },
-    { id: 'REL', label: '关系', icon: '≡' },
-    { id: 'PROF', label: '技艺', icon: '※' },
-    { id: 'LOG', label: '生平', icon: '☰' },
+    { id: 'ATTR', label: '属性', icon: 'Dna' },
+    { id: 'FATE', label: '命格', icon: 'Star' },
+    { id: 'REL', label: '关系', icon: 'Users' },
+    { id: 'PROF', label: '技艺', icon: 'Hammer' },
+    { id: 'LOG', label: '生平', icon: 'History' },
 ];
 const TABS_NPC = [
-    { id: 'ATTR', label: '属性', icon: '◇' },
-    { id: 'FATE', label: '命格', icon: '☆' },
+    { id: 'ATTR', label: '属性', icon: 'Dna' },
+    { id: 'FATE', label: '命格', icon: 'Star' },
 ];
 
-// ─── 辅助：五维雷达图 SVG ───
+// ─── 辅助：六维雷达图 SVG ───
 function RadarChart({ values, masked }: { values: { key: string; name: string; val: number }[]; masked?: boolean }) {
     const MAX_VAL = Math.max(20, ...values.map(s => s.val));
     const R = 25, C = 50;
@@ -126,7 +133,7 @@ export const CharacterSheet = () => {
     // UUID that is stable for the lifetime of this component to avoid render impurity 
     const [stableUid] = useState(() => Math.random().toString(36).slice(2, 10).toUpperCase());
 
-    // 五维数值
+    // 六维数值
     const mainAttrs = MAIN_STATS.map(key => ({
         key, name: STAT_LABELS[key], val: attributes[key] || 0
     }));
@@ -187,8 +194,8 @@ export const CharacterSheet = () => {
                         <div className="text-center space-y-1.5 w-full relative z-10">
                             <h2 className="text-2xl font-serif font-bold text-slate-800 tracking-wider flex items-center justify-center gap-1.5">
                                 {name}
-                                <span className={`text-sm ${gender === 'Male' ? 'text-blue-400/70' : 'text-rose-400/70'}`}>
-                                    {gender === 'Male' ? '♂' : '♀'}
+                                <span className={`flex items-center ${gender === 'Male' ? 'text-blue-400/70' : 'text-rose-400/70'}`}>
+                                    {gender === 'Male' ? renderIcon('Mars', 'w-4 h-4') : renderIcon('Venus', 'w-4 h-4')}
                                 </span>
                             </h2>
                             {/* NPC 关系 + 亲密度 */}
@@ -242,9 +249,9 @@ export const CharacterSheet = () => {
                         {tabs.map(tab => (
                             <button key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`pb-3 px-4 text-sm font-serif tracking-[0.2em] transition-all relative group
+                                className={`pb-3 px-4 flex items-center gap-1.5 text-sm font-serif tracking-[0.2em] transition-all relative group
                                     ${activeTab === tab.id ? 'text-emerald-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>
-                                <span className="mr-1 opacity-60">{tab.icon}</span>
+                                <span className="opacity-60">{renderIcon(tab.icon, "w-4 h-4 -mt-0.5")}</span>
                                 {tab.label}
                                 {activeTab === tab.id && (
                                     <div className="absolute bottom-0 left-0 w-full h-[2px] bg-emerald-500 rounded-t-full" />
@@ -262,11 +269,11 @@ export const CharacterSheet = () => {
                         {/* ═══ 属性 Tab ═══ */}
                         {activeTab === 'ATTR' && (
                             <div className="space-y-8 animate-fade-in">
-                                {/* 五维雷达图 */}
+                                {/* 六维雷达图 */}
                                 <div>
                                     <h3 className="flex items-center gap-3 text-base font-bold text-slate-600 mb-4 font-serif tracking-widest">
                                         <span className="w-1.5 h-5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                                        五维属性
+                                        六维属性
                                         {!canSeeStats && <span className="text-xs text-slate-600 font-normal tracking-normal ml-2">— 境界不足，无法洞悉</span>}
                                     </h3>
                                     <div className="max-w-[280px] mx-auto">
@@ -314,8 +321,8 @@ export const CharacterSheet = () => {
 
                                 {/* NPC 信息不足提示 */}
                                 {isNPC && !canSeeStats && (
-                                    <div className="p-4 border border-dashed border-slate-200 rounded-xl bg-white/20 text-xs text-slate-500 leading-relaxed font-mono flex gap-3">
-                                        <span className="text-lg text-amber-500/50">⚠</span>
+                                    <div className="p-4 border border-dashed border-slate-200 rounded-xl bg-white/20 text-xs text-slate-500 leading-relaxed font-mono flex gap-3 items-start">
+                                        <span className="text-amber-500/50 mt-0.5">{renderIcon('AlertTriangle', 'w-5 h-5')}</span>
                                         <div className="pt-0.5">
                                             对方境界高深，你的修为尚不足以窥探其全貌。<br />
                                             <span className="text-slate-600">提升自身境界后可查看更多信息。</span>

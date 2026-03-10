@@ -35,7 +35,7 @@ export const ReincarnationHall = () => {
             <div className="flex-1 w-full max-w-[1200px] px-6 pb-24 overflow-y-auto no-scrollbar z-10 mask-image-b">
                 {/* Hint */}
                 {metaState.karma === 0 && (
-                    <div className="text-center mb-8 text-slate-600 font-serif tracking-widest text-sm bg-white py-2 rounded-lg border border-slate-200 mx-auto max-w-md text-outlined shadow-sm">
+                    <div className="text-center mb-8 text-slate-600 tracking-widest text-sm bg-white py-2 rounded-lg border border-slate-200 mx-auto max-w-md text-outlined shadow-sm">
                         提示: 在游戏中度过一生，根据评分可获得轮回点。
                     </div>
                 )}
@@ -43,25 +43,32 @@ export const ReincarnationHall = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {META_UPGRADES.map(u => {
                         const level = metaState.unlockedUpgrades[u.id] || 0;
+                        const isMax = level >= u.maxLevel;
                         const cost = getCost(u, level);
-                        const canAfford = metaState.karma >= cost;
+                        const canAfford = metaState.karma >= cost && !isMax;
 
                         return (
                             <div key={u.id} className="relative group bg-white border border-slate-200 hover:border-amber-300 rounded-xl p-6 transition-all duration-300 hover:bg-amber-50/30 hover:-translate-y-1 hover:shadow-lg flex flex-col h-full">
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-xl font-serif font-bold text-amber-800 tracking-widest group-hover:text-amber-600 transition-colors text-outlined-strong">{u.name}</h3>
-                                    <div className="px-2.5 py-1 rounded-md text-xs font-mono text-amber-700 bg-amber-50 border border-amber-200 font-bold text-outlined">Lv.{level}</div>
+                                    <div className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold text-outlined ${isMax ? 'bg-slate-100 text-slate-500 border-slate-200' : 'text-amber-700 bg-amber-50 border border-amber-200'}`}>
+                                        {isMax ? 'MAX' : `Lv.${level}/${u.maxLevel}`}
+                                    </div>
                                 </div>
 
-                                <p className="text-sm text-slate-600 mb-6 leading-relaxed font-serif min-h-[3em] text-outlined">{u.desc}</p>
+                                <p className="text-sm text-slate-600 mb-6 leading-relaxed min-h-[3em] text-outlined">{u.desc}</p>
 
                                 <div className="mt-auto space-y-4">
-                                    <div className="text-sm font-mono flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <div className="text-sm flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
                                         <span className="text-slate-500 text-outlined">当前效果</span>
                                         <div className="flex items-center gap-2">
                                             <span className="text-slate-700 text-outlined">{u.effectDesc(level)}</span>
-                                            <span className="text-slate-400">→</span>
-                                            <span className="text-emerald-600 font-bold text-outlined-strong">{u.effectDesc(level + 1)}</span>
+                                            {!isMax && (
+                                                <>
+                                                    <span className="text-slate-400">→</span>
+                                                    <span className="text-emerald-600 font-bold text-outlined-strong">{u.effectDesc(level + 1)}</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
 
@@ -69,15 +76,17 @@ export const ReincarnationHall = () => {
                                         onClick={() => purchaseUpgrade(u.id, cost)}
                                         disabled={!canAfford}
                                         className={`w-full py-3 rounded-lg border text-sm tracking-[0.3em] font-serif font-bold transition-all duration-300 relative overflow-hidden group/btn text-outlined-strong
-                                            ${canAfford
-                                                ? 'bg-gradient-to-r from-amber-500 to-amber-600 border-amber-400 text-white hover:from-amber-600 hover:to-amber-700 hover:shadow-lg cursor-pointer'
-                                                : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                                            ${isMax
+                                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                                                : canAfford
+                                                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 border-amber-400 text-white hover:from-amber-600 hover:to-amber-700 hover:shadow-lg cursor-pointer'
+                                                    : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
                                             }
                                         `}
                                     >
                                         <div className="flex items-center justify-center gap-2 relative z-10">
-                                            <span>升级消耗</span>
-                                            <span className="font-mono">{cost}</span>
+                                            <span>{isMax ? '已满级' : '升级消耗'}</span>
+                                            {!isMax && <span className="font-bold">{cost}</span>}
                                         </div>
                                         {canAfford && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-500"></div>}
                                     </button>

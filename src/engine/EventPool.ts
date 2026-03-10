@@ -163,7 +163,7 @@ export class EventPool {
     /**
      * 移除特定来源的注入事件
      */
-    removeBySource(source: string): number {
+    removeBySource(_source: string): number {
         // We don't track source per-event currently, so this removes by log matching
         // For future enhancement: add source field to injected events
         console.warn(`[EventPool] removeBySource 暂未实现精确按来源移除，需要增强数据结构`);

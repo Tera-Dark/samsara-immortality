@@ -103,12 +103,12 @@ export class TravelSystem {
         const locationEntity = this.getLocationEntity(engine, locationId);
 
         let canRest = false;
-        if (locationEntity && 'type' in locationEntity && (locationEntity.type === 'CITY' || locationEntity.type === 'SECT')) {
+        if (locationEntity && 'type' in locationEntity && (locationEntity.type === 'CITY' || locationEntity.type === 'SECT' || locationEntity.type === 'INN')) {
             canRest = true;
         }
 
         if (!canRest) {
-            return { success: false, message: '只有在城镇或宗门才能安全休息。' };
+            return { success: false, message: '只有在客栈、城镇或宗门才能安全休息。' };
         }
 
         const cost = 5;

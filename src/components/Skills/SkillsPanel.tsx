@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { SKILLS } from '../../data/skills';
+import { Swords, HeartPulse, ShieldHalf, SquareDashed } from 'lucide-react';
 
 interface SkillsPanelProps {
     onClose: () => void;
@@ -82,7 +83,7 @@ export const SkillsPanel: React.FC<SkillsPanelProps> = ({ onClose }) => {
                     style={{ borderColor: isSelected ? undefined : (skill ? TYPE_COLORS[skill.type] : undefined) }}
                 >
                     <div className="text-2xl mr-4 opacity-80">
-                        {skill ? (skill.type === 'ATTACK' ? '⚔️' : skill.type === 'HEAL' ? '💚' : '🛡️') : '🈳'}
+                        {skill ? (skill.type === 'ATTACK' ? <Swords className="w-6 h-6 text-red-400" /> : skill.type === 'HEAL' ? <HeartPulse className="w-6 h-6 text-emerald-400" /> : <ShieldHalf className="w-6 h-6 text-amber-400" />) : <SquareDashed className="w-6 h-6 text-slate-500" />}
                     </div>
                     <div className="flex-1 overflow-hidden">
                         {skill ? (
@@ -153,8 +154,8 @@ export const SkillsPanel: React.FC<SkillsPanelProps> = ({ onClose }) => {
                                                 已装备
                                             </div>
                                         )}
-                                        <div className="text-4xl mb-2 opacity-80">
-                                            {skill.type === 'ATTACK' ? '⚔️' : skill.type === 'HEAL' ? '💚' : '🛡️'}
+                                        <div className="text-4xl mb-2 opacity-80 flex justify-center">
+                                            {skill.type === 'ATTACK' ? <Swords className="w-8 h-8 text-red-400" /> : skill.type === 'HEAL' ? <HeartPulse className="w-8 h-8 text-emerald-400" /> : <ShieldHalf className="w-8 h-8 text-amber-400" />}
                                         </div>
                                         <div className="text-sm font-bold truncate px-2 w-full text-center" style={{ color: TYPE_COLORS[skill.type] }}>
                                             {skill.name}
@@ -177,8 +178,8 @@ export const SkillsPanel: React.FC<SkillsPanelProps> = ({ onClose }) => {
                     <div className="w-80 border-l border-slate-200 bg-slate-800/30 p-6 flex flex-col relative shadow-[-10px_0_20px_rgba(0,0,0,0.2)]">
                         {selectedSkillDef ? (
                             <>
-                                <div className="text-5xl mb-6 text-center drop-shadow-lg mt-4">
-                                    {selectedSkillDef.type === 'ATTACK' ? '⚔️' : selectedSkillDef.type === 'HEAL' ? '💚' : '🛡️'}
+                                <div className="text-5xl mb-6 text-center drop-shadow-lg mt-4 flex justify-center">
+                                    {selectedSkillDef.type === 'ATTACK' ? <Swords className="w-12 h-12 text-red-400" /> : selectedSkillDef.type === 'HEAL' ? <HeartPulse className="w-12 h-12 text-emerald-400" /> : <ShieldHalf className="w-12 h-12 text-amber-400" />}
                                 </div>
                                 <h3 className="text-2xl font-bold mb-2 text-center drop-shadow" style={{ color: TYPE_COLORS[selectedSkillDef.type] }}>
                                     {selectedSkillDef.name}

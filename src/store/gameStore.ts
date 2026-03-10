@@ -78,6 +78,7 @@ interface GameStore {
   makeChoice: (choice: EventChoice) => void;
   ackBreakthrough: () => void;
   travel: (targetId: string) => { success: boolean; message: string };
+  interactNPC: (npc: import('../types/worldTypes').WorldNPC, type: 'TALK' | 'SPAR' | 'KILL') => void;
 
   // Combat Proxy
   startCombat: (enemy: Partial<CombatEntity>, type?: CombatState['type']) => void;
@@ -136,8 +137,7 @@ export const useGameStore = create<GameStore>()(
           globalLuck: 50,
           worldMonth: 0,
           activeWorldEvents: []
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any, // Cast to any because we provide partial world state that Engine will fill
+        } as unknown as PlayerState['world'],
 
         // [NEW] Personality & Acquired Traits
         personality: {
@@ -384,7 +384,7 @@ export const useGameStore = create<GameStore>()(
             const mergedState = deepMerge<PlayerState>(freshState, data.gameState);
 
             // Safety checks
-            if (!mergedState.attributes) mergedState.attributes = {} as any;
+            if (!mergedState.attributes) mergedState.attributes = {} as Record<string, number>;
             if (!mergedState.flags) mergedState.flags = [];
             if (!mergedState.world || !mergedState.world.regions) {
               return { success: false, message: '存档缺少世界数据，无法导入。' };
@@ -505,6 +505,41 @@ export const useGameStore = create<GameStore>()(
             set({ gameState: { ...engine.state } });
           }
           return result;
+        },
+
+        interactNPC: (npc: import('../types/worldTypes').WorldNPC, type: 'TALK' | 'SPAR' | 'KILL') => {
+          const { engine } = get();
+
+          let log = '';
+          if (type === 'TALK') {
+            npc.affinity = (npc.affinity || 0) + 5;
+            log = `你与【${npc.name}】攀谈许久，相谈甚欢，好感度提升。`;
+          } else if (type === 'SPAR') {
+            npc.affinity = (npc.affinity || 0) + 2;
+            log = `你与【${npc.name}】互相印证所学，略有感悟。`;
+          } else if (type === 'KILL') {
+            npc.affinity = (npc.affinity || 0) - 50;
+            log = `你悍然对【${npc.name}】出手，对方拼死突围，结下死仇。`;
+          }
+
+          engine.state.history.push(`${engine.getTimeStr()} ${log}`);
+
+          // Pass time
+          const result = engine.advanceTime(0, { action: 'INTERACT' }, 5);
+
+          if (result.event) {
+            engine.processEvent(result.event);
+          }
+
+          if (result.combat) {
+            get().startCombat(result.combat.enemy, result.combat.type);
+          }
+
+          set({
+            gameState: { ...engine.state },
+            currentEvent: result.event || null,
+            breakthroughMsg: result.message || null
+          });
         },
 
         // --- Combat Methods ---

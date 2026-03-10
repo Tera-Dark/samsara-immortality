@@ -4,6 +4,7 @@ import { ConditionBuilder } from './ConditionBuilder';
 import { EffectEditor } from './EffectEditor';
 import { ChoiceEditor } from './ChoiceEditor';
 import type { GameEvent, Condition, Effect, EventChoice } from '../types';
+import { ScrollText } from 'lucide-react';
 
 type EventCategory = 'ALL' | 'CORE' | 'INFANT' | 'MORTAL' | 'QI' | 'CHILDHOOD';
 
@@ -540,7 +541,7 @@ export const EventEditor: React.FC = () => {
                     </>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-600">
-                        <div className="text-4xl mb-4">📜</div>
+                        <ScrollText className="w-10 h-10 text-slate-600 mb-4" />
                         <div className="text-lg italic">选择一个事件进行编辑</div>
                         <div className="text-xs mt-2">或点击「新建事件」创建</div>
                     </div>
