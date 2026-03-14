@@ -8,7 +8,13 @@ import { XianxiaConfig } from '../modules/xianxia/config';
 import { ActionSystem } from '../engine/systems/ActionSystem';
 import { deepMerge } from '../utils/DataUtils';
 import { CombatEngine } from '../engine/systems/CombatSystem';
+import { AchievementSystem } from '../engine/systems/AchievementSystem';
+import { CultivationSystem } from '../engine/systems/CultivationSystem';
 import type { CombatState, CombatEntity } from '../types/combat';
+import type { NarrativeEvent } from '../components/NarrativeOverlay';
+import type { ModuleConfig } from '../types/meta';
+import { resolveCombatRewards } from '../utils/combatRewards';
+import { applyCombatBondAid, applyFinalBattleSupport } from '../utils/socialUtils';
 
 // Import other stores for cross-store interaction
 import { useUIStore } from './uiStore';
@@ -18,6 +24,61 @@ import { useUIStore } from './uiStore';
 
 // --- SAVE SYSTEM VERSIONING ---
 const SAVE_VERSION = 1;
+
+function applyLateFinalPhaseSupport(combatState: CombatState, engine: GameEngine) {
+  if (combatState.enemy.id !== 'story_void_lord_true') return;
+
+  const messages: string[] = [];
+
+  if (engine.state.flags.includes('STORY:FINAL_SUPPORT_SCOUTS')) {
+    combatState.player.buffs.push({
+      id: 'final_phase_scouts',
+      name: '斥候回线',
+      description: '斥候回传的险地图录让你更早预判来势。',
+      duration: 3,
+      type: 'BUFF',
+      effect: { statMultiplier: { SPD: 1.1, DEF: 1.08 } }
+    });
+    messages.push('斥候一路送回的险地图录让你在古主真身前总能快上半步。');
+  }
+
+  if (engine.state.flags.includes('STORY:FINAL_SUPPORT_BEACON')) {
+    combatState.player.shield += 120;
+    messages.push('裂口烽灯与预警阵替你提前分担了一轮归墟恶意。');
+  }
+
+  if (engine.state.flags.includes('STORY:FINAL_SUPPORT_WAR_FORGE')) {
+    combatState.player.buffs.push({
+      id: 'final_phase_war_forge',
+      name: '战备齐整',
+      description: '大战前赶制的法器与符箓在这一刻终于全部派上了用场。',
+      duration: 4,
+      type: 'BUFF',
+      effect: { statMultiplier: { ATK: 1.12, DEF: 1.12 } }
+    });
+    messages.push('战前炉火里赶制出的器符真正接上了你的最后一战。');
+  }
+
+  if (engine.state.flags.includes('STORY:FINAL_SUPPORT_RESOLVE')) {
+    const healGain = 60;
+    combatState.player.hp = Math.min(combatState.player.maxHp, combatState.player.hp + healGain);
+    messages.push(`大战前夜沉淀下来的道心让你稳住了最后一口气机，额外恢复 ${healGain} 点生命。`);
+  }
+
+  messages.forEach((message) => {
+    combatState.logs.push({
+      turn: combatState.turn,
+      actorName: '系统',
+      targetName: combatState.player.name,
+      skillName: '终局援势',
+      damage: 0,
+      isCrit: false,
+      heal: 0,
+      message,
+    });
+    engine.state.history.push(`${engine.getTimeStr()} ${message}`);
+  });
+}
 
 // Migration Helper
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,6 +121,7 @@ interface GameStore {
   currentEvent: GameEvent | null;
   breakthroughMsg: string | null;
   currentCombat: CombatState | null;
+  narrativeEvent: NarrativeEvent | null;
 
   // Actions
   saveGame: (slotId?: number) => void;
@@ -74,17 +136,36 @@ interface GameStore {
 
   // Engine Proxy
   nextTurn: () => void;
-  performAction: (actionType: 'WORK' | 'CULTIVATE' | 'EXPLORE' | 'GROW' | 'STUDY_LIT') => void;
+  performAction: (actionType: 'WORK' | 'CULTIVATE' | 'EXPLORE' | 'GROW' | 'STUDY_LIT' | 'REFINE_ALCHEMY') => void;
   makeChoice: (choice: EventChoice) => void;
   ackBreakthrough: () => void;
   travel: (targetId: string) => { success: boolean; message: string };
   interactNPC: (npc: import('../types/worldTypes').WorldNPC, type: 'TALK' | 'SPAR' | 'KILL') => void;
 
   // Combat Proxy
-  startCombat: (enemy: Partial<CombatEntity>, type?: CombatState['type']) => void;
+  startCombat: (
+    enemy: Partial<CombatEntity>,
+    type?: CombatState['type'],
+    context?: {
+      victoryFlags?: string[];
+      victoryHistory?: string;
+      nextEnemy?: Partial<CombatEntity>;
+      nextType?: CombatState['type'];
+      nextVictoryFlags?: string[];
+      nextVictoryHistory?: string;
+    }
+  ) => void;
   executeCombatSkill: (skillId: string) => void;
   fleeCombat: () => void;
   exitCombat: () => void;
+
+  // Narrative UI
+  triggerNarrative: (event: NarrativeEvent) => void;
+  clearNarrative: () => void;
+  updateRuntimeConfig: (field: 'stats' | 'resources', value: ModuleConfig['stats'] | ModuleConfig['resources']) => void;
+  upsertRuntimeEvent: (event: GameEvent) => void;
+  deleteRuntimeEvent: (eventId: string) => boolean;
+  hotReloadRuntimeData: () => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -155,6 +236,37 @@ export const useGameStore = create<GameStore>()(
         currentEvent: null,
         breakthroughMsg: null,
         currentCombat: null,
+        narrativeEvent: null,
+
+        triggerNarrative: (event) => set({ narrativeEvent: event }),
+        clearNarrative: () => set({ narrativeEvent: null }),
+        updateRuntimeConfig: (field, value) => {
+          const { engine } = get();
+          if (field === 'stats') {
+            engine.updateModuleConfig({ stats: value as ModuleConfig['stats'] });
+          } else {
+            engine.updateModuleConfig({ resources: value as ModuleConfig['resources'] });
+          }
+          set({ gameState: { ...engine.state } });
+        },
+        upsertRuntimeEvent: (event) => {
+          const { engine } = get();
+          engine.upsertRuntimeEvent(event);
+          set({ gameState: { ...engine.state } });
+        },
+        deleteRuntimeEvent: (eventId) => {
+          const { engine } = get();
+          const removed = engine.removeRuntimeEvent(eventId);
+          if (removed) {
+            set({ gameState: { ...engine.state } });
+          }
+          return removed;
+        },
+        hotReloadRuntimeData: () => {
+          const { engine } = get();
+          engine.hotReload(engine.moduleConfig, engine.events);
+          set({ gameState: { ...engine.state } });
+        },
 
         // --- Persistence (Multi-Slot) ---
         currentSlot: null as number | null,
@@ -285,9 +397,7 @@ export const useGameStore = create<GameStore>()(
             });
 
             // Restore UI Scene
-            if (data.scene) {
-              useUIStore.getState().setScene(data.scene);
-            }
+            useUIStore.getState().setScene(data.scene || 'GAME');
 
             // Update Meta Last Played
             const meta = get().getSlots();
@@ -310,6 +420,9 @@ export const useGameStore = create<GameStore>()(
             delete meta.slots[slotId];
             if (meta.lastPlayedSlot === slotId) meta.lastPlayedSlot = -1;
             localStorage.setItem('aeon_save_meta', JSON.stringify(meta));
+            if (get().currentSlot === slotId) {
+              set({ currentSlot: null });
+            }
             console.log(`[Store] Meta updated`, meta);
           } else {
             console.warn(`[Store] Slot ${slotId} not found in meta to delete`);
@@ -403,6 +516,7 @@ export const useGameStore = create<GameStore>()(
 
             // Update meta
             const meta = get().getSlots();
+            meta.lastPlayedSlot = slotId;
             meta.slots[slotId] = {
               timestamp: saveData.timestamp,
               name: mergedState.name || '导入存档',
@@ -420,6 +534,7 @@ export const useGameStore = create<GameStore>()(
         },
 
         startGame: (talents: Talent[], attributes: Record<string, number>) => {
+          const selectedSlot = get().currentSlot;
           const { engine } = get();
           engine.reset();
 
@@ -445,18 +560,17 @@ export const useGameStore = create<GameStore>()(
             gameState: { ...engine.state },
             currentEvent: null,
             breakthroughMsg: null,
-            currentSlot: null // Clear slot until saved
+            currentSlot: selectedSlot
           });
 
           // Auto-Save Initial State
-          const { currentSlot } = get();
-          if (currentSlot !== null) {
-            get().saveGame(currentSlot);
+          if (selectedSlot !== null) {
+            get().saveGame(selectedSlot);
           }
         },
 
         // Unified Action Handler
-        performAction: (actionType: 'WORK' | 'CULTIVATE' | 'EXPLORE' | 'GROW' | 'STUDY_LIT') => {
+        performAction: (actionType: 'WORK' | 'CULTIVATE' | 'EXPLORE' | 'GROW' | 'STUDY_LIT' | 'REFINE_ALCHEMY') => {
           const { engine } = get();
 
           const system = new ActionSystem(engine);
@@ -464,14 +578,31 @@ export const useGameStore = create<GameStore>()(
           const result = system.perform(actionType);
 
           if (result.success) {
+            AchievementSystem.checkAll(engine);
+
             if (result.combat) {
               get().startCombat(result.combat.enemy, result.combat.type);
+            }
+
+            // Check if this is a major narrative event (like a Major Breakthrough or Tribulation Failure)
+            let narrativeTriggered = false;
+            // "全属性大幅提升" is the signature in CultivationSystem for a major breakthrough
+            // "根基受损" is the signature for failing tribulation
+            if (result.message && (result.message.includes('全属性大幅提升') || result.message.includes('雷劫之下'))) {
+                const isFail = result.message.includes('雷劫之下');
+                get().triggerNarrative({
+                    id: `breakthrough_narrative_${Date.now()}`,
+                    title: isFail ? '渡劫失败' : '大境界突破',
+                    theme: isFail ? 'danger' : 'breakthrough',
+                    content: [result.message]
+                });
+                narrativeTriggered = true;
             }
 
             set({
               gameState: { ...engine.state }, // Force update
               currentEvent: result.event || null,
-              breakthroughMsg: result.message || null
+              breakthroughMsg: (!narrativeTriggered && result.message) ? result.message : null
             });
           }
         },
@@ -483,9 +614,17 @@ export const useGameStore = create<GameStore>()(
         makeChoice: (choice: EventChoice) => {
           const { engine } = get();
           engine.makeChoice(choice);
+          AchievementSystem.checkAll(engine);
 
           if (choice.combat) {
-            get().startCombat(choice.combat.enemy, choice.combat.type);
+            get().startCombat(choice.combat.enemy, choice.combat.type, {
+              victoryFlags: choice.combat.victoryFlags,
+              victoryHistory: choice.combat.victoryHistory,
+              nextEnemy: choice.combat.nextEnemy,
+              nextType: choice.combat.nextType,
+              nextVictoryFlags: choice.combat.nextVictoryFlags,
+              nextVictoryHistory: choice.combat.nextVictoryHistory,
+            });
           }
 
           set({
@@ -502,7 +641,25 @@ export const useGameStore = create<GameStore>()(
           const { engine } = get();
           const result = engine.travelTo(targetId);
           if (result.success) {
-            set({ gameState: { ...engine.state } });
+            if (result.event) {
+              engine.processEvent(result.event);
+            }
+
+            AchievementSystem.checkAll(engine);
+
+            if (result.combat) {
+              get().startCombat(result.combat.enemy, result.combat.type);
+            }
+
+            set({
+              gameState: { ...engine.state },
+              currentEvent: result.event || null,
+              breakthroughMsg: result.timeMessage || null
+            });
+          }
+
+          if (!result.success) {
+            return result;
           }
           return result;
         },
@@ -522,6 +679,23 @@ export const useGameStore = create<GameStore>()(
             log = `你悍然对【${npc.name}】出手，对方拼死突围，结下死仇。`;
           }
 
+          if (type === 'TALK') {
+            npc.affinity = Math.max(npc.affinity || 0, (npc.affinity || 0));
+            engine.state.exp = Math.min(engine.state.maxExp, engine.state.exp + 8);
+
+            if (npc.position === 'WANDERER' && !engine.state.flags.includes(`ARC_GUIDE_NPC:${npc.id}`)) {
+              engine.state.flags.push(`ARC_GUIDE_NPC:${npc.id}`);
+              log = `你与【${npc.name}】闲谈许久，对方看你顺眼，答应以后若再相逢会多指点你几句。`;
+            } else {
+              log = `你与【${npc.name}】攀谈许久，眼界与见闻都增长了几分。`;
+            }
+          } else if (type === 'SPAR') {
+            engine.state.exp = Math.min(engine.state.maxExp, engine.state.exp + 18);
+            log = `你与【${npc.name}】互相印证所学，切磋之后都略有感悟。`;
+          } else if (type === 'KILL') {
+            log = `你悍然对【${npc.name}】出手，对方拼死突围，从此结下深仇。`;
+          }
+
           engine.state.history.push(`${engine.getTimeStr()} ${log}`);
 
           // Pass time
@@ -530,6 +704,8 @@ export const useGameStore = create<GameStore>()(
           if (result.event) {
             engine.processEvent(result.event);
           }
+
+          AchievementSystem.checkAll(engine);
 
           if (result.combat) {
             get().startCombat(result.combat.enemy, result.combat.type);
@@ -543,9 +719,40 @@ export const useGameStore = create<GameStore>()(
         },
 
         // --- Combat Methods ---
-        startCombat: (enemy: Partial<CombatEntity>, type: CombatState['type'] = 'WILD') => {
+        startCombat: (
+          enemy: Partial<CombatEntity>,
+          type: CombatState['type'] = 'WILD',
+          context?: {
+            victoryFlags?: string[];
+            victoryHistory?: string;
+            nextEnemy?: Partial<CombatEntity>;
+            nextType?: CombatState['type'];
+            nextVictoryFlags?: string[];
+            nextVictoryHistory?: string;
+          }
+        ) => {
           const { engine } = get();
           const combatEngine = new CombatEngine(engine.state, enemy, type);
+          if (
+            context?.victoryFlags?.length
+            || context?.victoryHistory
+            || context?.nextEnemy
+            || context?.nextVictoryFlags?.length
+            || context?.nextVictoryHistory
+          ) {
+            combatEngine.state.context = {
+              ...combatEngine.state.context,
+              victoryFlags: context?.victoryFlags || [],
+              victoryHistory: context?.victoryHistory,
+              nextEnemy: context?.nextEnemy,
+              nextType: context?.nextType,
+              nextVictoryFlags: context?.nextVictoryFlags || [],
+              nextVictoryHistory: context?.nextVictoryHistory,
+            };
+          }
+          applyCombatBondAid(combatEngine.state, engine);
+          applyFinalBattleSupport(combatEngine.state, engine);
+          applyLateFinalPhaseSupport(combatEngine.state, engine);
           set({ currentCombat: combatEngine.state });
         },
 
@@ -568,30 +775,74 @@ export const useGameStore = create<GameStore>()(
         exitCombat: () => {
           const { currentCombat, engine } = get();
           if (currentCombat) {
-            engine.state.battleStats.MAX_HP = Math.max(1, currentCombat.player.hp);
+            engine.state.battleStats.HP = Math.max(0, currentCombat.player.hp);
+            engine.state.battleStats.MP = Math.max(0, currentCombat.player.mp);
+
+            const nextEnemy = currentCombat.context?.nextEnemy as Partial<CombatEntity> | undefined;
+            const nextType = currentCombat.context?.nextType as CombatState['type'] | undefined;
+            const nextVictoryFlags = Array.isArray(currentCombat.context?.nextVictoryFlags)
+              ? (currentCombat.context?.nextVictoryFlags as string[])
+              : [];
+            const nextVictoryHistory = typeof currentCombat.context?.nextVictoryHistory === 'string'
+              ? currentCombat.context.nextVictoryHistory
+              : undefined;
+
+            if (currentCombat.status === 'VICTORY' && currentCombat.type !== 'TRIBULATION' && !nextEnemy) {
+              resolveCombatRewards(engine, currentCombat);
+            }
+
+            if (currentCombat.status === 'VICTORY') {
+              const victoryFlags = Array.isArray(currentCombat.context?.victoryFlags)
+                ? (currentCombat.context?.victoryFlags as string[])
+                : [];
+              victoryFlags.forEach((flag) => {
+                if (!engine.state.flags.includes(flag)) {
+                  engine.state.flags.push(flag);
+                }
+              });
+              if (typeof currentCombat.context?.victoryHistory === 'string' && currentCombat.context.victoryHistory) {
+                engine.state.history.push(`${engine.getTimeStr()} ${currentCombat.context.victoryHistory}`);
+              }
+            }
+
+            if (currentCombat.status === 'VICTORY' && nextEnemy) {
+              const phaseLabel = typeof nextEnemy.levelStr === 'string' ? nextEnemy.levelStr : '终局二阶段';
+              const nextName = nextEnemy.name || '未知强敌';
+              get().triggerNarrative({
+                id: `boss_phase_${Date.now()}`,
+                title: '终局再起',
+                theme: 'danger',
+                content: [
+                  `你刚击碎 ${currentCombat.enemy.name} 的外壳，归墟深处却并未就此沉寂。`,
+                  `${nextName} 的真正恶意终于彻底压下，战局被拖入 ${phaseLabel}。`,
+                ],
+              });
+              get().startCombat(nextEnemy, nextType || currentCombat.type, {
+                victoryFlags: nextVictoryFlags,
+                victoryHistory: nextVictoryHistory,
+              });
+              set({ gameState: { ...engine.state } });
+              return;
+            }
 
             if (currentCombat.type === 'TRIBULATION') {
               if (currentCombat.status === 'VICTORY') {
                 engine.state.history.push(`${engine.getTimeStr()} 雷劫消散，突破成功！`);
                 set({ breakthroughMsg: "雷劫消散，突破成功！" });
-                // Wait, we need to apply breakthrough success if it wasn't already.
-                // Since we can't easily import CultivationSystem here without circular dependencies,
-                // let's just cheat and level up the realm here directly, simulating applyBreakthroughSuccess.
-                const idx = engine.state.realm_idx;
-                engine.state.realm_idx++;
-                const bonus = (idx + 1) * 10; // Approximate GAME_RULES.REALM_BONUS_MULTIPLIER
-                for (const k in engine.state.attributes) {
-                  if (k !== 'MONEY' && k !== 'MOOD') engine.state.attributes[k] += bonus;
-                }
-                engine.state.battleStats.MAX_HP = Math.floor(engine.state.battleStats.MAX_HP * 1.5);
-                engine.state.battleStats.HP = engine.state.battleStats.MAX_HP;
-                engine.state.battleStats.MP = engine.state.battleStats.MAX_MP;
+                CultivationSystem.applyBreakthroughSuccess(engine);
               } else {
                 engine.state.history.push(`${engine.getTimeStr()} 渡劫失败，修为散尽，身受重伤！`);
                 set({ breakthroughMsg: "渡劫失败，修为散尽，身受重伤！" });
+                CultivationSystem.applyBreakthroughFailure(engine);
               }
+            } else if (currentCombat.status === 'DEFEAT' && currentCombat.type !== 'SPARRING') {
+              engine.state.alive = false;
+              engine.state.history.push(`${engine.getTimeStr()} 战斗失败，你身受致命重伤，道消身死。`);
+            } else if (currentCombat.status === 'DEFEAT') {
+              engine.state.battleStats.HP = Math.max(1, engine.state.battleStats.HP);
             }
 
+            AchievementSystem.checkAll(engine);
             set({ currentCombat: null, gameState: { ...engine.state } });
           }
         }

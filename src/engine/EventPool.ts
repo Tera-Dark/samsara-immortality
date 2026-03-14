@@ -163,11 +163,46 @@ export class EventPool {
     /**
      * 移除特定来源的注入事件
      */
-    removeBySource(_source: string): number {
+    removeBySource(source: string): number {
         // We don't track source per-event currently, so this removes by log matching
         // For future enhancement: add source field to injected events
+        void source;
         console.warn(`[EventPool] removeBySource 暂未实现精确按来源移除，需要增强数据结构`);
         return 0;
+    }
+
+    upsertRuntimeEvent(event: GameEvent): void {
+        const coreIndex = this.coreEvents.findIndex(existing => existing.id === event.id);
+        if (coreIndex >= 0) {
+            this.coreEvents = this.coreEvents.map((existing, index) => index === coreIndex ? event : existing);
+            return;
+        }
+
+        const injectedIndex = this.injectedEvents.findIndex(existing => existing.id === event.id);
+        if (injectedIndex >= 0) {
+            this.injectedEvents = this.injectedEvents.map((existing, index) => index === injectedIndex ? event : existing);
+            return;
+        }
+
+        this.injectedEvents.push(event);
+        this.injectedIds.add(event.id);
+    }
+
+    removeEventById(eventId: string): boolean {
+        const coreIndex = this.coreEvents.findIndex(event => event.id === eventId);
+        if (coreIndex >= 0) {
+            this.coreEvents = this.coreEvents.filter(event => event.id !== eventId);
+            return true;
+        }
+
+        const injectedIndex = this.injectedEvents.findIndex(event => event.id === eventId);
+        if (injectedIndex >= 0) {
+            this.injectedEvents = this.injectedEvents.filter(event => event.id !== eventId);
+            this.injectedIds.delete(eventId);
+            return true;
+        }
+
+        return false;
     }
 
     // ═══ Debug ═══

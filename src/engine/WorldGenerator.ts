@@ -518,6 +518,8 @@ export class WorldGenerator {
             combatPower: Math.max(1, combatPower),
             knownToPlayer: false,
             playerFavor: 0,
+            affinity: 0,
+            relationships: [],
         };
     }
 

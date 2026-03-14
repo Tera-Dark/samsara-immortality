@@ -1,169 +1,164 @@
-﻿import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Activity, Heart, Sparkles, Swords, Wind } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
-import { REALMS, CULTIVATION_REALMS } from '../types';
+import { CULTIVATION_REALMS, REALMS } from '../types';
 
-// 六维属性及派生说明
 const STAT_CONFIG = [
-    { key: 'STR', label: '体魄', color: 'text-red-400', bg: 'bg-red-500', desc: '影响气血上限与基础防御' },
-    { key: 'MND', label: '神识', color: 'text-emerald-400', bg: 'bg-emerald-500', desc: '影响法力上限、身法与暴击' },
-    { key: 'INT', label: '悟性', color: 'text-sky-400', bg: 'bg-sky-500', desc: '影响修炼速度与突破概率' },
-    { key: 'POT', label: '资质', color: 'text-violet-400', bg: 'bg-violet-500', desc: '影响灵气吸收与法术威力' },
-    { key: 'CHR', label: '魅力', color: 'text-pink-400', bg: 'bg-pink-500', desc: '影响人际初见好感与双修' },
-    { key: 'LUCK', label: '气运', color: 'text-amber-400', bg: 'bg-amber-500', desc: '影响奇遇品质与掉落福报' },
+    { key: 'STR', label: '体魄', accent: 'text-rose-700', bar: 'bg-rose-500', soft: 'bg-rose-50', desc: '影响气血上限与基础防御。' },
+    { key: 'MND', label: '神识', accent: 'text-emerald-700', bar: 'bg-emerald-500', soft: 'bg-emerald-50', desc: '影响法力上限、身法与暴击。' },
+    { key: 'INT', label: '悟性', accent: 'text-sky-700', bar: 'bg-sky-500', soft: 'bg-sky-50', desc: '影响修炼速度与突破稳定度。' },
+    { key: 'POT', label: '资质', accent: 'text-violet-700', bar: 'bg-violet-500', soft: 'bg-violet-50', desc: '影响灵气吸收与术法威力。' },
+    { key: 'CHR', label: '魅力', accent: 'text-pink-700', bar: 'bg-pink-500', soft: 'bg-pink-50', desc: '影响初见观感与人际互动。' },
+    { key: 'LUCK', label: '气运', accent: 'text-amber-700', bar: 'bg-amber-500', soft: 'bg-amber-50', desc: '影响奇遇品质与额外收益。' },
 ];
 
-const StatBar = ({ label, value, color, bg, desc }: { label: string; value: number; color: string; bg: string; desc: string }) => {
-    const max = 30; // 假设常规基准满值，可视情况溢出
-    const pct = Math.min(100, (value / max) * 100);
+const BATTLE_STATS = [
+    { key: 'ATK', label: '攻击', icon: Swords, accent: 'text-rose-700', bg: 'bg-rose-50' },
+    { key: 'DEF', label: '防御', icon: Activity, accent: 'text-sky-700', bg: 'bg-sky-50' },
+    { key: 'SPD', label: '身法', icon: Wind, accent: 'text-emerald-700', bg: 'bg-emerald-50' },
+    { key: 'CRIT', label: '暴击', icon: Sparkles, accent: 'text-amber-700', bg: 'bg-amber-50' },
+    { key: 'MOVE_SPEED', label: '脚力', icon: Heart, accent: 'text-violet-700', bg: 'bg-violet-50' },
+];
+
+const ResourceBar = ({
+    label,
+    current,
+    max,
+    gradient,
+}: {
+    label: string;
+    current: number;
+    max: number;
+    gradient: string;
+}) => {
+    const pct = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
     return (
-        <div className="py-2 border-b border-slate-100/50 last:border-0 group relative">
-            <div className="flex items-center justify-between mb-1.5 z-10 relative">
-                <div className="flex items-center gap-2">
-                    <span className={`text-sm font-serif font-bold ${color}`}>{label}</span>
-                    <span className="text-sm font-mono text-slate-800 font-bold">{value}</span>
-                </div>
-                <div className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 bg-white/90 px-1 rounded">
-                    {desc}
-                </div>
+        <div className="rounded-2xl border border-slate-200 bg-white/10 p-2.5">
+            <div className="mb-1.5 flex items-center justify-between text-[10px] tracking-[0.14em] text-slate-300">
+                <span>{label}</span>
+                <span className="font-mono tracking-normal text-slate-100">{Math.floor(current)} / {Math.floor(max)}</span>
             </div>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative z-0">
-                <div
-                    className={`h-full rounded-full transition-all duration-500 ${bg} opacity-80`}
-                    style={{ width: `${pct}%` }}
-                />
+            <div className="h-2 overflow-hidden rounded-full bg-slate-800/80">
+                <div className={`h-full rounded-full bg-gradient-to-r ${gradient}`} style={{ width: `${pct}%` }} />
             </div>
         </div>
     );
 };
 
-// 气血/灵力专属条
-const ResourceBar = ({ label, current, max, colorHint }: { label: string; current: number; max: number; colorHint: 'red' | 'blue' | 'green' }) => {
-    const pct = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
-
-    let gradients = '';
-    if (colorHint === 'red') { gradients = 'from-rose-500 to-red-600'; }
-    else if (colorHint === 'blue') { gradients = 'from-sky-400 to-blue-600'; }
-    else if (colorHint === 'green') { gradients = 'from-emerald-400 to-green-600'; }
-
+const StatCard = ({
+    label,
+    value,
+    accent,
+    bar,
+    soft,
+    desc,
+}: {
+    label: string;
+    value: number;
+    accent: string;
+    bar: string;
+    soft: string;
+    desc: string;
+}) => {
+    const pct = Math.max(8, Math.min(100, (value / 30) * 100));
     return (
-        <div className="relative w-full h-6 bg-slate-800 rounded shadow-inner overflow-hidden border border-slate-700/50 group">
-            {/* 流光倒影 */}
-            <div
-                className={`absolute top-0 left-0 bottom-0 bg-gradient-to-r ${gradients} transition-all duration-500 ease-out`}
-                style={{ width: `${pct}%` }}
-            >
-                <div className="absolute inset-0 bg-white/20 w-full h-1/2"></div>
+        <div className={`group relative rounded-2xl border border-slate-200 px-2.5 py-2.5 ${soft}`}>
+            <div className="flex items-center justify-between gap-2">
+                <span className={`whitespace-nowrap text-xs font-semibold ${accent}`}>{label}</span>
+                <span className="rounded-full bg-white/90 px-2 py-0.5 text-xs font-mono font-bold text-slate-700">{value}</span>
             </div>
-            <div className="absolute inset-0 flex items-center justify-center px-2">
-                <span className="text-[10px] font-bold tracking-widest text-white/90 drop-shadow-md z-10 flex gap-2">
-                    <span>{label}</span>
-                    <span className="font-mono">{Math.floor(current)} / {Math.floor(max)}</span>
-                </span>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/90">
+                <div className={`h-full rounded-full ${bar}`} style={{ width: `${pct}%` }} />
+            </div>
+            <div className="pointer-events-none absolute left-2 right-2 top-[calc(100%+8px)] z-20 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-[11px] leading-5 text-slate-600 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                {desc}
             </div>
         </div>
     );
-}
+};
 
 export const StatsPanel = () => {
     const { gameState, engine } = useGameStore();
-    const [showMore, setShowMore] = useState(false);
+    const [showMore, setShowMore] = useState(true);
 
-    const HP = gameState.attributes?.HP || 0;
-    const MAX_HP = gameState.battleStats?.MAX_HP || 100;
-    const MP = gameState.attributes?.MP || 0;
-    const MAX_MP = gameState.battleStats?.MAX_MP || 0;
-    const MOOD = gameState.attributes?.MOOD || 0;
+    const attrs = gameState.attributes || {};
+    const battle = gameState.battleStats || {};
+    const hp = attrs.HP || 0;
+    const maxHp = battle.MAX_HP || 100;
+    const mp = attrs.MP || 0;
+    const maxMp = battle.MAX_MP || 0;
 
-    const MAIN_STATS_KEYS = ['STR', 'MND', 'INT', 'POT', 'CHR', 'LUCK'];
-
-    // 过滤掉主界面已特殊展示的属性，剩下的扔进详细面板
-    const extraStats = engine.moduleConfig.stats.filter(s =>
-        s.visible && !MAIN_STATS_KEYS.includes(s.id) && s.id !== 'HP' && s.id !== 'MP' && s.id !== 'MOOD' && s.id !== 'MONEY'
+    const extraStats = useMemo(
+        () => engine.moduleConfig.stats.filter((s) =>
+            s.visible && !['STR', 'MND', 'INT', 'POT', 'CHR', 'LUCK', 'HP', 'MP', 'MOOD', 'MONEY'].includes(s.id),
+        ),
+        [engine.moduleConfig.stats],
     );
 
-    // 计算修仙周天分格 (大周天=10小节)
+    const realmLabel = REALMS[gameState.realm_idx] || '凡人';
+    const subRealm = gameState.realm_idx > 0 && CULTIVATION_REALMS[gameState.realm_idx]?.subRealms?.[gameState.sub_realm_idx];
     const totalSegments = 10;
 
     return (
-        <div className="flex flex-col h-full w-full gap-3 p-2 pb-0">
-            {/* 顶层：境界 + 生命法力 (深色修仙风格底) */}
-            <div className="relative overflow-hidden bg-slate-900 rounded-xl p-4 shadow-lg border border-slate-700/60 shrink-0">
-                {/* 仙侠国风边角装饰 */}
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-amber-500/30 rounded-tl-xl pointer-events-none"></div>
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-amber-500/30 rounded-br-xl pointer-events-none"></div>
-
-                <div className="flex flex-col items-center gap-1 mb-4 relative z-10">
-                    <span className="text-xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-500 tracking-[0.2em] filter drop-shadow">
-                        {REALMS[gameState.realm_idx] || '凡人'}
-                        {gameState.realm_idx > 0 && CULTIVATION_REALMS[gameState.realm_idx]?.subRealms && CULTIVATION_REALMS[gameState.realm_idx].subRealms!.length > 0 ? (
-                            <span className="ml-1 text-amber-200/80 text-sm">· {CULTIVATION_REALMS[gameState.realm_idx].subRealms![gameState.sub_realm_idx]}</span>
-                        ) : null}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">第 {gameState.age} 岁 | {gameState.flags.includes('HAS_CULTIVATION_METHOD') ? '修道者' : '凡夫俗子'}</span>
+        <div className="flex h-full w-full flex-col gap-2.5 p-1.5 pb-0">
+            <div className="overflow-visible rounded-3xl border border-slate-800 bg-[radial-gradient(circle_at_top,rgba(245,158,11,0.14),transparent_46%),linear-gradient(180deg,#0f172a,#111827)] p-3 shadow-xl">
+                <div className="flex items-start justify-between gap-2.5">
+                    <div className="min-w-0">
+                        <div className="text-[10px] tracking-[0.18em] text-amber-200/75">角色命盘</div>
+                        <div className="mt-1 break-all text-[15px] font-bold tracking-[0.02em] text-amber-100">{realmLabel}</div>
+                        {subRealm && <div className="mt-0.5 break-words text-[10px] text-amber-300/80">{subRealm}</div>}
+                    </div>
+                    <div className="max-w-[78px] rounded-2xl border border-amber-500/20 bg-white/5 px-2 py-1.5 text-right">
+                        <div className="text-[9px] tracking-[0.14em] text-slate-400">当前身份</div>
+                        <div className="mt-1 text-[10px] font-medium leading-4 text-slate-100">
+                            {gameState.flags.includes('HAS_CULTIVATION_METHOD') ? '修道者' : '凡俗中人'}
+                        </div>
+                        <div className="mt-1 text-[10px] text-slate-400">{gameState.age} 岁</div>
+                    </div>
                 </div>
 
-                <div className="flex flex-col gap-2 relative z-10">
-                    <ResourceBar label="气血" current={HP} max={MAX_HP} colorHint="red" />
-                    {MAX_MP > 0 && <ResourceBar label="灵运" current={MP} max={MAX_MP} colorHint="blue" />}
+                <div className="mt-3 space-y-2">
+                    <ResourceBar label="气血" current={hp} max={maxHp} gradient="from-rose-500 via-red-500 to-orange-500" />
+                    {maxMp > 0 && <ResourceBar label="灵力" current={mp} max={maxMp} gradient="from-sky-400 via-blue-500 to-indigo-500" />}
                 </div>
             </div>
 
-            {/* 核心区：六维属性 */}
-            <div className="shrink-0 bg-white rounded-xl p-4 shadow-sm border border-slate-200/60 relative overflow-hidden">
-                <div className="absolute -right-4 -top-2 text-slate-100 text-6xl opacity-40 pointer-events-none select-none font-serif font-black">根骨</div>
-
-                <div className="text-xs font-serif text-slate-500 mb-3 tracking-widest flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> 命脉根骨
-                    </span>
-                    <span className="text-[9px] text-slate-400">悬浮查看派生</span>
+            <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="mb-2.5 flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="text-[10px] tracking-[0.16em] text-slate-500">核心属性</div>
+                    <div className="text-[10px] text-slate-400">悬停查看详细作用</div>
                 </div>
-
-                <div className="flex flex-col">
-                    {STAT_CONFIG.map(stat => (
-                        <StatBar
+                <div className="grid grid-cols-2 gap-2 overflow-visible">
+                    {STAT_CONFIG.map((stat) => (
+                        <StatCard
                             key={stat.key}
                             label={stat.label}
-                            value={gameState.attributes?.[stat.key] || 0}
-                            color={stat.color}
-                            bg={stat.bg}
+                            value={attrs[stat.key] || 0}
+                            accent={stat.accent}
+                            bar={stat.bar}
+                            soft={stat.soft}
                             desc={stat.desc}
                         />
                     ))}
                 </div>
             </div>
 
-            {/* 大周天修仙进度条 (始终在六维之下，信息之上) */}
             {gameState.realm_idx > 0 && (
-                <div className="shrink-0 bg-slate-900 rounded-xl p-3 border border-slate-700/60 shadow-inner relative overflow-hidden group">
-                    {/* 周天进度网格底纹 */}
-                    <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(90deg, transparent 9px, #fff 10px)', backgroundSize: '10% 100%' }}></div>
-
-                    <div className="flex justify-between items-center mb-1.5 relative z-10">
-                        <span className="text-xs font-serif text-amber-200/80 tracking-widest flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>周天流转
-                        </span>
-                        <span className="text-[10px] font-mono text-emerald-400/80">{Math.floor(gameState.exp)} / {gameState.maxExp}</span>
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-3 shadow-inner">
+                    <div className="mb-2 flex items-center justify-between">
+                        <span className="text-[10px] tracking-[0.16em] text-emerald-300/80">周天流转</span>
+                        <span className="text-[11px] font-mono text-emerald-400">{Math.floor(gameState.exp)} / {gameState.maxExp}</span>
                     </div>
-
-                    <div className="relative w-full h-3.5 bg-slate-800 rounded-sm overflow-hidden flex shadow-inner border border-slate-700/50">
+                    <div className="flex h-3.5 overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
                         {Array.from({ length: totalSegments }).map((_, idx) => {
                             const segSize = gameState.maxExp / totalSegments;
                             const isFull = gameState.exp >= segSize * (idx + 1);
                             const isCurrent = !isFull && gameState.exp > segSize * idx;
                             const pct = isCurrent ? ((gameState.exp - segSize * idx) / segSize) * 100 : 0;
-
                             return (
-                                <div key={idx} className="flex-1 border-r border-slate-900/80 last:border-0 relative">
-                                    {isFull && (
-                                        <div className="absolute inset-0 bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                    )}
-                                    {isCurrent && (
-                                        <div
-                                            className="absolute top-0 left-0 bottom-0 bg-emerald-400/90 shadow-[0_0_8px_rgba(52,211,153,0.8)] transition-all duration-300"
-                                            style={{ width: `${pct}%` }}
-                                        ></div>
-                                    )}
+                                <div key={idx} className="relative flex-1 border-r border-slate-950 last:border-r-0">
+                                    {isFull && <div className="absolute inset-0 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.45)]" />}
+                                    {isCurrent && <div className="absolute inset-y-0 left-0 bg-emerald-400" style={{ width: `${pct}%` }} />}
                                 </div>
                             );
                         })}
@@ -171,62 +166,56 @@ export const StatsPanel = () => {
                 </div>
             )}
 
-            {/* 其他详细信息 (折叠收纳) */}
-            <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200/60 flex flex-col overflow-hidden mb-2">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                 <button
                     onClick={() => setShowMore(!showMore)}
-                    className="flex items-center justify-between w-full px-4 py-2.5 bg-slate-50 border-b border-slate-100 hover:bg-indigo-50/50 transition-colors group"
+                    className="flex min-h-[50px] items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2 text-left transition-colors hover:bg-slate-100"
                 >
-                    <span className="text-xs font-serif text-slate-600 group-hover:text-indigo-600 transition-colors tracking-widest">{showMore ? '收起详情' : '展开战力与名鉴'}</span>
-                    <svg className={`w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-400 transition-transform ${showMore ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <div>
+                        <div className="text-[10px] tracking-[0.16em] text-slate-500">{showMore ? '收起扩展面板' : '展开扩展面板'}</div>
+                        <div className="mt-0.5 text-[10px] text-slate-400">战斗数值与额外属性</div>
+                    </div>
+                    <div className={`text-sm text-slate-400 transition-transform ${showMore ? 'rotate-180' : ''}`}>⌄</div>
                 </button>
 
                 {showMore && (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-2 opacity-100 animate-fade-in space-y-4">
-                        {/* 战斗面板 */}
+                    <div className="custom-scrollbar min-h-[220px] min-w-0 flex-1 space-y-3 overflow-y-auto p-3">
                         <div>
-                            <div className="text-[10px] font-mono text-slate-400 mb-2 tracking-widest border-b border-slate-100 pb-1">武道杀伐</div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                {[
-                                    { k: 'ATK', n: '大攻', c: 'text-red-400' },
-                                    { k: 'DEF', n: '防御', c: 'text-blue-400' },
-                                    { k: 'SPD', n: '身法', c: 'text-green-400' },
-                                    { k: 'CRIT', n: '会心', c: 'text-orange-400' },
-                                    { k: 'MOVE_SPEED', n: '脚力', c: 'text-teal-400' },
-                                ].map(s => (
-                                    <div key={s.k} className="flex justify-between items-center py-0.5 border-b border-slate-50/50">
-                                        <span className={`text-xs font-serif ${s.c}`}>{s.n}</span>
-                                        <span className="text-sm text-slate-700 font-mono font-bold">{Math.floor(gameState.battleStats[s.k] || 0)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 杂项面板 */}
-                        <div className="pb-2">
-                            <div className="text-[10px] font-mono text-slate-400 mb-2 tracking-widest border-b border-slate-100 pb-1">造化身家</div>
-                            <div className="space-y-1">
-                                <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                                    <span className="text-xs font-serif text-amber-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-sm bg-amber-400"></span>灵石</span>
-                                    <span className="text-sm font-mono text-amber-600 font-bold">{gameState.attributes?.MONEY || 0}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                                    <span className="text-xs font-serif text-emerald-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-sm bg-emerald-400"></span>心情</span>
-                                    <span className={`text-sm font-mono font-bold ${MOOD >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                                        {MOOD}
-                                    </span>
-                                </div>
-                                {extraStats.map(stat => {
-                                    const val = gameState.attributes?.[stat.id] || 0;
+                            <div className="mb-2.5 text-[10px] tracking-[0.16em] text-slate-500">战斗面板</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {BATTLE_STATS.map((stat) => {
+                                    const Icon = stat.icon;
                                     return (
-                                        <div key={stat.id} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
-                                            <span className="text-xs text-slate-500 font-serif flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-slate-300"></span>{stat.name}</span>
-                                            <span className={`text-sm font-mono font-bold ${val > 0 ? 'text-slate-700' : 'text-slate-400'}`}>{Math.floor(val)}</span>
+                                        <div key={stat.key} className={`rounded-2xl border border-slate-200 px-2.5 py-2.5 ${stat.bg}`}>
+                                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                                                <Icon className={`h-3.5 w-3.5 ${stat.accent}`} />
+                                                <span className="whitespace-nowrap">{stat.label}</span>
+                                            </div>
+                                            <div className="mt-1.5 text-lg font-mono font-bold text-slate-800">
+                                                {Math.floor(battle[stat.key] || 0)}
+                                            </div>
                                         </div>
                                     );
                                 })}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="mb-2.5 text-[10px] tracking-[0.16em] text-slate-500">额外属性</div>
+                            <div className="space-y-2">
+                                {extraStats.length > 0 ? extraStats.map((stat) => {
+                                    const value = attrs[stat.id] || 0;
+                                    return (
+                                        <div key={stat.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                                            <span className="whitespace-nowrap text-xs text-slate-600">{stat.name}</span>
+                                            <span className="text-xs font-mono font-bold text-slate-800">{Math.floor(value)}</span>
+                                        </div>
+                                    );
+                                }) : (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-sm text-slate-400">
+                                        当前没有额外展示属性
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

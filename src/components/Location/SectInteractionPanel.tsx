@@ -1,7 +1,9 @@
 ﻿import React from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useState } from 'react';
 import type { Sect } from '../../types/worldTypes';
 import { DOCTRINE_TEMPLATES, SECT_RANK_TEMPLATES } from '../../modules/xianxia/data/worldTemplates';
+import { AchievementSystem } from '../../engine/systems/AchievementSystem';
 
 interface SectInteractionPanelProps {
     sectId: string;
@@ -10,6 +12,7 @@ interface SectInteractionPanelProps {
 export const SectInteractionPanel: React.FC<SectInteractionPanelProps> = ({ sectId }) => {
     const { gameState, engine } = useGameStore();
     const sect = gameState.world?.sects.find((s: Sect) => s.id === sectId);
+    const [actionMessage, setActionMessage] = useState<string | null>(null);
 
     if (!sect) {
         return <div className="p-4 text-center text-slate-500 text-xs">无法获取宗门信息。</div>;
@@ -26,10 +29,13 @@ export const SectInteractionPanel: React.FC<SectInteractionPanelProps> = ({ sect
 
     const handleJoin = () => {
         const result = engine.joinSect(sect.id);
+        AchievementSystem.checkAll(engine);
         useGameStore.setState({ gameState: { ...engine.state } });
         if (!result.success) {
-            alert(result.message);
+            setActionMessage(result.message);
+            return;
         }
+        setActionMessage(`已拜入 ${sect.name}。`);
     };
 
     return (
@@ -54,6 +60,12 @@ export const SectInteractionPanel: React.FC<SectInteractionPanelProps> = ({ sect
             <p className="text-xs text-slate-400 italic">
                 {sect.description}
             </p>
+
+            {actionMessage && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    {actionMessage}
+                </div>
+            )}
 
             <div className="mt-2 pt-2 border-t border-slate-200 flex gap-2 justify-end">
                 {isMember ? (

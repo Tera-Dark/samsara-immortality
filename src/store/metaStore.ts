@@ -4,6 +4,8 @@ import { META_UPGRADES } from '../data/meta';
 interface MetaState {
     karma: number;
     unlockedUpgrades: { [key: string]: number };
+    achievements: string[];
+    reincarnationCount: number;
 }
 
 interface MetaStore {
@@ -14,28 +16,51 @@ interface MetaStore {
     saveMeta: () => void;
     purchaseUpgrade: (upgradeId: string, cost: number) => void;
     addKarma: (amount: number) => void;
+    unlockAchievement: (achievementId: string) => void;
+    incrementReincarnation: () => void;
+}
+
+const DEFAULT_META_STATE: MetaState = {
+    karma: 0,
+    unlockedUpgrades: {},
+    achievements: [],
+    reincarnationCount: 0,
+};
+
+function readMetaState(): MetaState {
+    try {
+        return {
+            karma: parseInt(localStorage.getItem('aeon_meta_karma') || '0'),
+            unlockedUpgrades: JSON.parse(localStorage.getItem('aeon_meta_upgrades') || '{}'),
+            achievements: JSON.parse(localStorage.getItem('aeon_meta_achievements') || '[]'),
+            reincarnationCount: parseInt(localStorage.getItem('aeon_meta_reincarnation_count') || '0'),
+        };
+    } catch {
+        return DEFAULT_META_STATE;
+    }
+}
+
+function persistMetaState(metaState: MetaState) {
+    localStorage.setItem('aeon_meta_karma', metaState.karma.toString());
+    localStorage.setItem('aeon_meta_upgrades', JSON.stringify(metaState.unlockedUpgrades));
+    localStorage.setItem('aeon_meta_achievements', JSON.stringify(metaState.achievements));
+    localStorage.setItem('aeon_meta_reincarnation_count', metaState.reincarnationCount.toString());
 }
 
 export const useMetaStore = create<MetaStore>((set, get) => ({
-    metaState: {
-        karma: 0,
-        unlockedUpgrades: {}
-    },
+    metaState: readMetaState(),
 
     loadMeta: () => {
-        const karma = parseInt(localStorage.getItem('aeon_meta_karma') || '0');
-        const upgrades = JSON.parse(localStorage.getItem('aeon_meta_upgrades') || '{}');
-        set({ metaState: { karma, unlockedUpgrades: upgrades } });
+        set({ metaState: readMetaState() });
     },
 
     saveMeta: () => {
         const { metaState } = get();
-        localStorage.setItem('aeon_meta_karma', metaState.karma.toString());
-        localStorage.setItem('aeon_meta_upgrades', JSON.stringify(metaState.unlockedUpgrades));
+        persistMetaState(metaState);
     },
 
     purchaseUpgrade: (upgradeId, cost) => {
-        const { metaState, saveMeta } = get();
+        const { metaState } = get();
         const upgradeDef = META_UPGRADES.find(u => u.id === upgradeId);
 
         if (!upgradeDef) return;
@@ -54,17 +79,38 @@ export const useMetaStore = create<MetaStore>((set, get) => ({
                 }
             };
             set({ metaState: newMeta });
-            saveMeta(); // Auto save on purchase
+            persistMetaState(newMeta);
         }
     },
 
     addKarma: (amount) => {
-        const { metaState, saveMeta } = get();
+        const { metaState } = get();
         const newMeta = {
             ...metaState,
             karma: metaState.karma + amount
         };
         set({ metaState: newMeta });
-        saveMeta();
-    }
+        persistMetaState(newMeta);
+    },
+
+    unlockAchievement: (achievementId) => {
+        const { metaState } = get();
+        if (metaState.achievements.includes(achievementId)) return;
+        const newMeta = {
+            ...metaState,
+            achievements: [...metaState.achievements, achievementId],
+        };
+        set({ metaState: newMeta });
+        persistMetaState(newMeta);
+    },
+
+    incrementReincarnation: () => {
+        const { metaState } = get();
+        const newMeta = {
+            ...metaState,
+            reincarnationCount: metaState.reincarnationCount + 1,
+        };
+        set({ metaState: newMeta });
+        persistMetaState(newMeta);
+    },
 }));

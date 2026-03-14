@@ -52,7 +52,14 @@ export const useUIStore = create<UIState>()(
 
             setScene: (newScene) => set((state) => ({
                 scene: newScene,
-                previousScene: state.scene
+                previousScene: state.scene,
+                showCharacterSheet: false,
+                inspectTarget: null,
+                showInventory: false,
+                showSkills: false,
+                showMap: false,
+                showSettings: false,
+                showMissions: false,
             })),
 
             setVolume: (vol) => set((state) => ({ settings: { ...state.settings, volume: vol } })),

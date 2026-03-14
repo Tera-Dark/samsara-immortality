@@ -5,6 +5,9 @@ import { TalentSystem } from './TalentSystem';
 import { MissionSystem } from './MissionSystem';
 import { CultivationSystem } from './CultivationSystem';
 import { EventSystem } from './EventSystem';
+import { AbodeSystem } from './AbodeSystem';
+import { SectSystem } from './SectSystem';
+import { AchievementSystem } from './AchievementSystem';
 
 export class TimeSystem {
     static advanceTime(engine: GameEngine, monthsPassed: number, context?: { action?: string }, daysPassed: number = 0): { event: GameEvent | null; message?: string, combat?: { enemy: Partial<CombatEntity>, type: CombatState['type'] } } {
@@ -24,12 +27,24 @@ export class TimeSystem {
 
         const totalMonthsPassed = monthsPassed + extraMonths;
         engine.state.months += totalMonthsPassed;
+        engine.state.world.worldMonth += totalMonthsPassed;
 
         const oldAge = engine.state.age;
         engine.state.age = Math.floor(engine.state.months / 12);
 
         // [NEW] 气运buff倒计时
         TalentSystem.tickFortuneBuffs(engine, totalMonthsPassed);
+
+        // [NEW] 灵田生长 tick
+        AbodeSystem.tickGrowth(engine, totalMonthsPassed);
+
+        // [NEW] 宗门任务月度重置
+        if (totalMonthsPassed > 0) {
+            SectSystem.monthlyReset(engine);
+        }
+
+        // [NEW] 成就检测
+        AchievementSystem.checkAll(engine);
 
         // Age Up Trigger
         if (engine.state.age > oldAge) {
@@ -46,18 +61,16 @@ export class TimeSystem {
             const baseGain = 10 * totalMonthsPassed;
             const multi = 1 + (engine.state.attributes.POT || 0) * 0.05 + (engine.state.attributes.INT || 0) * 0.02;
             const rootSpeed = engine.state.cultivationSpeedMultiplier || 1.0;
-            engine.state.exp += Math.floor(baseGain * multi * rootSpeed);
+            const abodeBonus = 1 + AbodeSystem.getCultivationBonus(engine);
+            const realmBonus = 1 + Math.max(0, engine.state.realm_idx - 1) * 0.16;
+            engine.state.exp += Math.floor(baseGain * multi * rootSpeed * abodeBonus * realmBonus);
             if (engine.state.exp > engine.state.maxExp) {
                 engine.state.exp = engine.state.maxExp; // Cap at maxExp until breakthrough
             }
         }
 
-        // Legacy Per Turn (Maintain for now)
-        engine.state.talents.forEach(t => {
-            if (t.effect?.per_turn?.ALL) {
-                for (const k in engine.state.attributes) engine.state.attributes[k] += t.effect.per_turn.ALL;
-            }
-        });
+        // [REMOVED] Legacy per_turn code was double-applying effects.
+        // All per-turn effects are now handled exclusively by TalentSystem.triggerTalents() modifiers.
 
         // Check Missions
         MissionSystem.checkMissions(engine);

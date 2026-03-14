@@ -2,86 +2,96 @@ import type { PlayerState } from '../types';
 
 export function getGuidance(state: PlayerState): { text: string; subtext?: string } {
     const age = Math.floor(state.months / 12);
+    const hasMethod = state.flags.includes('HAS_CULTIVATION_METHOD');
+    const isEndingCleared = state.flags.includes('STORY:VOID_LORD_SLAIN');
+    const maxAttr = Math.max(0, ...Object.values(state.attributes || {}));
 
-    // 1. 幼儿期 (0-3岁)
+    if (isEndingCleared) {
+        return {
+            text: '黑潮已绝',
+            subtext: '你已完成本轮终局。可继续在人间收尾、收集高阶战利品，或返回主菜单开启下一世。',
+        };
+    }
+
     if (age < 3) {
         return {
-            text: "茁壮成长",
-            subtext: "使用[成长]跳过时间，等待3岁开启更多行动。"
+            text: '茁壮成长',
+            subtext: '使用[成长]推进时间，等到 3 岁后会开启更多行动。',
         };
     }
 
-    // 2. 凡人期 (属性积累)
-    // 检查是否已踏入仙途 (Has Qi)
-    const hasQi = state.realm_idx >= 1;
-    const hasBook = state.flags.includes('HAS_CULTIVATION_METHOD');
-
-    if (!hasQi) {
-        // 还没引气入体
-        if (!hasBook) {
-            // 还没功法 -> 需属性达标或奇遇
-            // 检查属性是否足够触发"仙缘" (假设需要某属性>10或运气)
-            // 简化逻辑：引导提升属性
-            const maxAttr = Math.max(...Object.values(state.attributes));
-            if (maxAttr < 10) {
-                return {
-                    text: "打熬筋骨",
-                    subtext: "通过[习文]或[习武]将任意属性提升至10点以上。"
-                };
-            } else {
-                return {
-                    text: "寻仙问道",
-                    subtext: "属性已足，通过[历练]寻找仙缘，或继续[习文/习武]等待机缘。"
-                };
-            }
-        } else {
-            // 有功法，没入道 -> 修炼！
+    if (!hasMethod) {
+        if (maxAttr < 10) {
             return {
-                text: "感应灵气",
-                subtext: "使用[修炼]尝试引气入体，踏入仙途。"
+                text: '打熬根骨',
+                subtext: '通过[习文]、[劳作]或[历练]先把任意一项属性提上去，为后续仙缘做准备。',
             };
         }
-    }
 
-    // 3. 炼气期
-    if (state.realm_idx === 1) { // 炼气
-        // 检查是否瓶颈
-        // 这里简化判断，假设 MP 满了就是瓶颈
-        // Actually gameStore checks `mpValue` vs `MAX_MP`.
-        // But `state` in `guideSystem` might not have transient `mpValue` if it's in a separate store? 
-        // Wait, `mpValue` was calculated in GameScene from `state`? 
-        // Ah, `gameState.battleStats.MAX_MP` is the limit. 
-        // The current value is... wait, where is current MP stored?
-        // `engine.state` usually has it? 
-        // In `GameEngine.ts`, `this.state` has `battleStats`, but `init` sets `MP` in `battleStats`.
-        // Usually `currentMP` is separate from `MAX_MP`?
-        // Looking at `GameScene.tsx`: `const mpValue = gameState.battleStats.MAX_MP || 0;` 
-        // Wait, line 30 involves `MAX_MP`.
-        // Line 82: `width: ... mpValue / (gameState.battleStats.MAX_MP ...)`
-        // It seems `mpValue` IS `MAX_MP` in the current simplistic implementation?
-        // Or `mpValue` is missing from `PlayerState` typescript definition?
-        // Let's re-read `PlayerState` in `index.ts`.
-        // `PlayerState` has `battleStats: BattleStats`. `BattleStats` has `MAX_MP`.
-        // Where is current MP?
-        // If the game design implies "Cultivation Progress" = "Max MP", then `MAX_MP` grows until it hits Realm Limit.
-
-        // Return generic cultivation advice
         return {
-            text: "精进修为",
-            subtext: "坚持[修炼]提升灵力上限，准备突破境界。"
+            text: '寻法问道',
+            subtext: '属性已够用，继续通过[历练]、事件遭遇和人物互动寻找真正的修行法门。',
         };
     }
 
-    // 4. 筑基期
-    if (state.realm_idx === 2) {
+    if (state.realm_idx === 0) {
         return {
-            text: "游历天下",
-            subtext: "筑基已成，可前往[世界地图]探索更广阔的天地。"
+            text: '感应灵气',
+            subtext: '已得法门，持续使用[吐纳]尝试引气入体，正式踏上修行路。',
+        };
+    }
+
+    if (state.realm_idx === 1) {
+        return {
+            text: '筹备筑基',
+            subtext: '练气阶段优先积累修为、丹药与资源，想办法拿到筑基丹并准备冲关。',
+        };
+    }
+
+    if (state.realm_idx === 2 && !state.flags.includes('STORY:BLACK_TIDE_OMEN')) {
+        return {
+            text: '黑潮前兆',
+            subtext: '筑基之后多去[历练]、[互动]与地图探索，尽快触发黑潮主线，游戏的真正中期会从这里展开。',
+        };
+    }
+
+    if (state.realm_idx === 3 && !state.flags.includes('STORY:ALLIANCE_PLEDGE')) {
+        return {
+            text: '站上前线',
+            subtext: '金丹已成，继续探索并接触修行界势力，尽快加入曙光盟约，主线会明显加速。',
+        };
+    }
+
+    if (state.realm_idx >= 4 && !state.flags.includes('STORY:VOID_ALTAR_BROKEN')) {
+        return {
+            text: '清理黑潮支点',
+            subtext: '你已进入后期，优先推动祭坛、监军、裂口等主线事件，不要只停留在普通刷修为。',
+        };
+    }
+
+    if (state.flags.includes('STORY:VOID_ALTAR_BROKEN') && !state.flags.includes('STORY:VOID_RIFT_SEALED')) {
+        return {
+            text: '准备封裂',
+            subtext: '现在该兼顾修为与战备，多跑高阶遗迹、秘境和灵脉，把终局前的资源攒起来。',
+        };
+    }
+
+    if (state.flags.includes('STORY:VOID_RIFT_SEALED') && !state.flags.includes('STORY:FINAL_MUSTER')) {
+        return {
+            text: '整军备战',
+            subtext: '终局已近，继续触发后期世界事件，把斥候、补给、烽灯、战备这些回响尽量攒齐。',
+        };
+    }
+
+    if (state.flags.includes('STORY:FINAL_MUSTER') && !state.flags.includes('STORY:VOID_LORD_SLAIN')) {
+        return {
+            text: '终局将至',
+            subtext: '你已具备挑战古主的条件。若还想更稳，可继续刷高阶遗迹、秘境和后期强敌补毕业装备。',
         };
     }
 
     return {
-        text: "修仙路漫漫",
-        subtext: "道法自然，随心而动。"
+        text: '修行未尽',
+        subtext: '当前没有明显卡点，可以按自己的节奏修炼、探索、炼丹或收集毕业资源。',
     };
 }

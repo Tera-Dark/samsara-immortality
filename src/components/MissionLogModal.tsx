@@ -1,167 +1,196 @@
-﻿
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { MAIN_QUESTS } from '../data/missions';
+import { ALL_QUESTS } from '../data/missions';
+import { formatEffectToTags } from '../utils/effectFormatter';
+import type { GenericMissionState, Mission, MissionType } from '../types/missionTypes';
 
 interface MissionLogModalProps {
     onClose: () => void;
 }
 
+type MissionTab = 'ACTIVE' | 'COMPLETED';
+
+type MissionEntry = {
+    id: string;
+    def: Mission;
+    progress?: GenericMissionState['objectives'];
+};
+
+const MISSION_TYPE_LABELS: Record<MissionType, string> = {
+    MAIN: '主线',
+    SIDE: '支线',
+    EVENT: '奇遇',
+};
+
+const MISSION_TYPE_STYLES: Record<MissionType, string> = {
+    MAIN: 'bg-amber-50 text-amber-700 border-amber-200',
+    SIDE: 'bg-sky-50 text-sky-700 border-sky-200',
+    EVENT: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+};
+
 export const MissionLogModal = ({ onClose }: MissionLogModalProps) => {
-    const { gameState } = useGameStore();
-    const [selectedTab, setSelectedTab] = useState<'ACTIVE' | 'COMPLETED'>('ACTIVE');
+    const missions = useGameStore((state) => state.gameState.missions);
+    const [selectedTab, setSelectedTab] = useState<MissionTab>('ACTIVE');
     const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
 
-    const activeMissions = gameState.missions?.active || [];
-    const completedMissionIds = gameState.missions?.completed || [];
+    const missionMap = useMemo(() => {
+        return new Map(ALL_QUESTS.map((mission) => [mission.id, mission]));
+    }, []);
 
-    // Helper to get mission definition
-    const getMissionDef = (id: string) => MAIN_QUESTS.find(m => m.id === id);
+    const activeList = useMemo<MissionEntry[]>(() => {
+        const entries: MissionEntry[] = [];
 
-    // Filtered lists
-    const activeList = activeMissions.map(m => ({ ...m, def: getMissionDef(m.id) })).filter(m => m.def);
-    const completedList = completedMissionIds.map(id => ({ id, def: getMissionDef(id) })).filter(m => m.def);
+        for (const missionState of missions?.active || []) {
+            const def = missionMap.get(missionState.id);
+            if (!def) continue;
+            entries.push({ id: missionState.id, def, progress: missionState.objectives });
+        }
 
-    // Current selection
+        return entries.sort((a, b) => ALL_QUESTS.findIndex((mission) => mission.id === a.id) - ALL_QUESTS.findIndex((mission) => mission.id === b.id));
+    }, [missionMap, missions?.active]);
+
+    const completedList = useMemo<MissionEntry[]>(() => {
+        const entries: MissionEntry[] = [];
+
+        for (const id of missions?.completed || []) {
+            const def = missionMap.get(id);
+            if (!def) continue;
+            entries.push({ id, def });
+        }
+
+        return entries.sort((a, b) => ALL_QUESTS.findIndex((mission) => mission.id === a.id) - ALL_QUESTS.findIndex((mission) => mission.id === b.id));
+    }, [missionMap, missions?.completed]);
+
     const currentList = selectedTab === 'ACTIVE' ? activeList : completedList;
-    const selectedMission = currentList.find(m => m.id === selectedMissionId) || currentList[0];
+    const selectedMission =
+        currentList.find((mission) => mission.id === selectedMissionId) ??
+        currentList[0] ??
+        null;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-            <div className="w-full max-w-4xl h-[600px] bg-white border border-slate-200 rounded-2xl shadow-xl flex flex-col overflow-hidden">
-
-                {/* Header */}
-                <div className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
-                    <h2 className="text-lg font-serif font-bold text-slate-700 tracking-[0.2em] flex items-center gap-2">
-                        <span className="w-1.5 h-5 bg-amber-400 rounded-full"></span>
-                        任务日志
-                    </h2>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+            <div className="flex h-[680px] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-6">
+                    <div>
+                        <div className="text-xs font-mono tracking-[0.35em] text-slate-400">MISSION ARCHIVE</div>
+                        <h2 className="mt-1 text-lg font-semibold text-slate-800">任务日志</h2>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition-colors hover:text-slate-700"
+                        aria-label="关闭任务日志"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
-                <div className="flex-1 flex min-h-0">
-                    {/* Left Sidebar: List */}
-                    <div className="w-56 bg-slate-50 border-r border-slate-200 flex flex-col">
-                        {/* Tabs */}
-                        <div className="flex border-b border-slate-200">
-                            <button
-                                onClick={() => setSelectedTab('ACTIVE')}
-                                className={`flex-1 py-3 text-sm font-serif transition-all relative ${selectedTab === 'ACTIVE'
-                                    ? 'text-amber-600 font-bold bg-white'
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
-                            >
-                                进行中 ({activeList.length})
-                                {selectedTab === 'ACTIVE' && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-amber-400 rounded-full"></div>}
-                            </button>
-                            <button
-                                onClick={() => setSelectedTab('COMPLETED')}
-                                className={`flex-1 py-3 text-sm font-serif transition-all relative ${selectedTab === 'COMPLETED'
-                                    ? 'text-emerald-600 font-bold bg-white'
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'}`}
-                            >
-                                已完成 ({completedList.length})
-                                {selectedTab === 'COMPLETED' && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-emerald-400 rounded-full"></div>}
-                            </button>
+                <div className="flex min-h-0 flex-1">
+                    <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-slate-50">
+                        <div className="grid grid-cols-2 border-b border-slate-200 p-2">
+                            {([
+                                { key: 'ACTIVE', label: `进行中 ${activeList.length}` },
+                                { key: 'COMPLETED', label: `已完成 ${completedList.length}` },
+                            ] as const).map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setSelectedTab(tab.key)}
+                                    className={`rounded-xl px-3 py-2 text-sm transition-colors ${
+                                        selectedTab === tab.key
+                                            ? 'bg-white font-semibold text-slate-800 shadow-sm'
+                                            : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Mission List */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                        <div className="flex-1 space-y-2 overflow-y-auto p-3 custom-scrollbar">
                             {currentList.length === 0 ? (
-                                <div className="p-4 text-center text-xs text-slate-400 font-serif">
-                                    暂无{selectedTab === 'ACTIVE' ? '进行中' : '已完成'}任务
+                                <div className="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4 text-sm text-slate-400">
+                                    {selectedTab === 'ACTIVE' ? '当前没有进行中的任务。' : '当前还没有已完成任务。'}
                                 </div>
                             ) : (
                                 currentList.map((item) => (
                                     <button
                                         key={item.id}
                                         onClick={() => setSelectedMissionId(item.id)}
-                                        className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${(selectedMission?.id === item.id)
-                                            ? 'bg-white border-slate-200 text-slate-700 shadow-sm'
-                                            : 'bg-transparent border-transparent text-slate-500 hover:bg-white/60 hover:text-slate-600'
-                                            }`}
+                                        className={`w-full rounded-2xl border p-3 text-left transition-all ${
+                                            selectedMission?.id === item.id
+                                                ? 'border-slate-300 bg-white shadow-sm'
+                                                : 'border-transparent bg-white/40 hover:border-slate-200 hover:bg-white/80'
+                                        }`}
                                     >
-                                        <div className="text-sm font-bold truncate">{item.def?.title || item.id}</div>
-                                        <div className="text-[10px] text-slate-400 mt-0.5">{item.def?.type === 'MAIN' ? '主线' : '支线'}</div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="truncate text-sm font-semibold text-slate-800">{item.def.title}</div>
+                                            <span className={`rounded-full border px-2 py-0.5 text-[10px] ${MISSION_TYPE_STYLES[item.def.type]}`}>
+                                                {MISSION_TYPE_LABELS[item.def.type]}
+                                            </span>
+                                        </div>
+                                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.def.description}</p>
                                     </button>
                                 ))
                             )}
                         </div>
-                    </div>
+                    </aside>
 
-                    {/* Right Content: Details */}
-                    <div className="flex-1 bg-white p-6 overflow-y-auto custom-scrollbar relative">
+                    <section className="flex-1 overflow-y-auto bg-white p-6 custom-scrollbar">
                         {selectedMission ? (
-                            <div className="max-w-2xl mx-auto space-y-6">
-                                {/* Title & Badge */}
-                                <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div className="mx-auto max-w-3xl space-y-6">
+                                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
                                     <div>
-                                        <h1 className="text-2xl font-serif font-bold text-slate-800 mb-2">{selectedMission.def?.title}</h1>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${selectedTab === 'ACTIVE'
-                                                ? 'bg-amber-50 border border-amber-200 text-amber-600'
-                                                : 'bg-emerald-50 border border-emerald-200 text-emerald-600'
-                                                }`}>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className={`rounded-full border px-3 py-1 text-xs ${MISSION_TYPE_STYLES[selectedMission.def.type]}`}>
+                                                {MISSION_TYPE_LABELS[selectedMission.def.type]}
+                                            </span>
+                                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
                                                 {selectedTab === 'ACTIVE' ? '进行中' : '已完成'}
                                             </span>
-                                            <span className="text-xs text-slate-400 font-mono">编号: {selectedMission.id}</span>
                                         </div>
+                                        <h1 className="mt-3 text-3xl font-semibold text-slate-900">{selectedMission.def.title}</h1>
+                                        <div className="mt-2 font-mono text-xs tracking-[0.2em] text-slate-400">{selectedMission.id}</div>
                                     </div>
-                                    {selectedTab === 'COMPLETED' && (
-                                        <div className="w-14 h-14 rounded-full border-2 border-emerald-300 text-emerald-400 flex items-center justify-center font-serif font-bold text-sm rotate-12 select-none">
-                                            完成
-                                        </div>
-                                    )}
                                 </div>
 
-                                {/* Description */}
-                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                    <p className="text-slate-600 leading-relaxed text-sm">
-                                        {selectedMission.def?.description}
-                                    </p>
+                                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                    <div className="text-xs font-mono tracking-[0.25em] text-slate-400">任务概述</div>
+                                    <p className="mt-3 leading-7 text-slate-700">{selectedMission.def.description}</p>
                                 </div>
 
-                                {/* Objectives */}
                                 <div>
-                                    <h3 className="text-sm text-slate-500 tracking-widest mb-3 border-l-2 border-amber-400 pl-3 font-serif">任务目标</h3>
-                                    <div className="space-y-2">
-                                        {selectedMission.def?.objectives.map((obj) => {
-                                            // Get progress if active (objectives is Map<string, number>)
-                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                            const currentCount = ('objectives' in selectedMission && (selectedMission as any).objectives)
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                ? ((selectedMission as any).objectives[obj.id] || 0)
-                                                : (selectedTab === 'COMPLETED' ? obj.requiredCount : 0);
-
-                                            const current = currentCount;
-                                            const needed = obj.requiredCount;
-                                            const isDone = current >= needed;
+                                    <div className="mb-3 text-sm font-semibold text-slate-800">目标进度</div>
+                                    <div className="space-y-3">
+                                        {selectedMission.def.objectives.map((objective) => {
+                                            const currentValue =
+                                                selectedTab === 'ACTIVE'
+                                                    ? Math.min(selectedMission.progress?.[objective.id] ?? 0, objective.requiredCount)
+                                                    : objective.requiredCount;
+                                            const progress = Math.min(100, Math.round((currentValue / objective.requiredCount) * 100));
+                                            const completed = currentValue >= objective.requiredCount;
 
                                             return (
-                                                <div key={obj.id} className={`flex items-center justify-between p-3 rounded-lg border ${isDone
-                                                    ? 'bg-emerald-50/50 border-emerald-100'
-                                                    : 'bg-white border-slate-100'
-                                                    }`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isDone
-                                                            ? 'bg-emerald-500 border-emerald-500'
-                                                            : 'border-slate-300'
-                                                            }`}>
-                                                            {isDone && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg>}
+                                                <div
+                                                    key={objective.id}
+                                                    className={`rounded-2xl border p-4 ${
+                                                        completed ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200 bg-white'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div>
+                                                            <div className="text-sm font-medium text-slate-800">{objective.description}</div>
+                                                            <div className="mt-1 text-xs text-slate-400">{objective.type}</div>
                                                         </div>
-                                                        <span className={`text-sm ${isDone ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                                                            {obj.description}
-                                                        </span>
+                                                        <div className="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs text-slate-500">
+                                                            {currentValue} / {objective.requiredCount}
+                                                        </div>
                                                     </div>
-                                                    <div className={`text-xs font-mono px-2 py-0.5 rounded ${isDone
-                                                        ? 'text-emerald-500 bg-emerald-50'
-                                                        : 'text-slate-400 bg-slate-50'
-                                                        }`}>
-                                                        {current} / {needed}
+                                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all ${completed ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                            style={{ width: `${progress}%` }}
+                                                        />
                                                     </div>
                                                 </div>
                                             );
@@ -169,25 +198,33 @@ export const MissionLogModal = ({ onClose }: MissionLogModalProps) => {
                                     </div>
                                 </div>
 
-                                {/* Rewards */}
-                                {selectedMission.def?.rewards && (
-                                    <div>
-                                        <h3 className="text-sm text-slate-500 tracking-widest mb-3 border-l-2 border-amber-400 pl-3 font-serif">任务奖励</h3>
-                                        <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-sm">
-                                            <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 font-serif font-bold shrink-0">赏</span>
-                                            <span>{selectedMission.def.rewards.text}</span>
-                                        </div>
+                                <div>
+                                    <div className="mb-3 text-sm font-semibold text-slate-800">任务奖励</div>
+                                    <div className="rounded-3xl border border-amber-200 bg-amber-50/80 p-5">
+                                        <div className="text-sm font-medium text-amber-900">{selectedMission.def.rewards.text}</div>
+                                        {selectedMission.def.rewards.effect && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {formatEffectToTags(selectedMission.def.rewards.effect).map((tag, index) => (
+                                                    <span
+                                                        key={`${selectedMission.id}-reward-${index}`}
+                                                        className="rounded-full border border-amber-200 bg-white/70 px-3 py-1 text-xs text-amber-800"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-
+                                </div>
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-3">
-                                <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-300 font-serif text-lg">志</div>
-                                <p className="font-serif tracking-widest">请选择一个任务查看详情</p>
+                            <div className="flex h-full items-center justify-center">
+                                <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-8 py-10 text-center text-slate-400">
+                                    选择左侧任务以查看详情。
+                                </div>
                             </div>
                         )}
-                    </div>
+                    </section>
                 </div>
             </div>
         </div>

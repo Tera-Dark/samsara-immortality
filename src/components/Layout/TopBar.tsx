@@ -1,11 +1,11 @@
-﻿
 import React from 'react';
+import { BookOpen, Briefcase, Compass, Save, Settings, Sparkles } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
 import { useUIStore } from '../../store/uiStore';
 import { REALMS } from '../../types';
 import { SpiritAvatar } from '../SpiritAvatar';
 import { getNongliDate } from '../../utils/TimeUtils';
-import { MAIN_QUESTS } from '../../data/missions';
+import { getPrimaryMission } from '../../utils/missionUtils';
 
 export const TopBar: React.FC = () => {
     const { gameState, engine } = useGameStore();
@@ -15,165 +15,176 @@ export const TopBar: React.FC = () => {
         toggleSkills,
         toggleMap,
         toggleSettings,
-        toggleMissions
+        toggleMissions,
     } = useUIStore();
 
-    // Derived Stats
     const ageYears = gameState.age;
     const maxLife = engine.getLifespan();
-    const lifePercent = Math.max(0, Math.min(100, ((maxLife - ageYears) / maxLife) * 100));
-    const mpValue = gameState.battleStats.MP || 0;
+    const lifePercent = Math.max(0, Math.min(100, ((maxLife - ageYears) / Math.max(1, maxLife)) * 100));
     const spiritStones = gameState.attributes?.MONEY || 0;
+    const primaryMission = getPrimaryMission(gameState);
+    const supportCount = (gameState.flags || []).filter((flag) => flag.startsWith('STORY:FINAL_SUPPORT_')).length;
+    const isEndingCleared = gameState.flags.includes('STORY:VOID_LORD_SLAIN');
+    const isFinalArc = gameState.flags.includes('STORY:FINAL_MUSTER') && !isEndingCleared;
 
     return (
-        <div className="shrink-0 border-b border-slate-200 bg-white/80 backdrop-blur-sm relative z-30">
-            <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
-
-                {/* Left: Character Info */}
-                <div className="flex items-center gap-4">
-                    {/* Avatar & Name */}
-                    <div
-                        onClick={() => toggleCharacterSheet(true)}
-                        className="flex items-center gap-3 cursor-pointer group"
-                    >
-                        <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-300 group-hover:border-jade/50 transition-colors bg-slate-100">
-                            <SpiritAvatar
-                                seed={gameState.name || '道'}
-                                realm={REALMS[gameState.realm_idx]}
-                            />
-                        </div>
-                        <div>
-                            <div className="text-sm font-serif font-bold text-slate-800 tracking-wider group-hover:text-jade transition-colors truncate max-w-[80px]">{gameState.name}</div>
-                            <div className="text-xs font-mono text-slate-500 truncate max-w-[100px]">{REALMS[gameState.realm_idx]} · {ageYears}岁</div>
-                        </div>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="w-px h-8 bg-slate-200"></div>
-
-                    {/* Status Bars */}
-                    <div className="flex flex-col gap-1">
-                        {/* Lifespan */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-serif text-emerald-500/80 w-6 text-right">寿元</span>
-                            <div className="w-32 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${lifePercent}%` }}></div>
-                            </div>
-                        </div>
-
-                        {/* MP */}
-                        {gameState.realm_idx > 0 && (
-                            <div className="flex items-center gap-2 animate-fade-in">
-                                <span className="text-xs font-serif text-sky-500/80 w-6 text-right">灵力</span>
-                                <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                    <div className="h-full bg-sky-500/80 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (mpValue / (gameState.battleStats.MAX_MP || 100)) * 100)}%` }}></div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Spirit Stones */}
-                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 rounded-full border border-amber-200 ml-2">
-                        <span className="text-xs text-amber-600 font-serif">灵石</span>
-                        <span className="text-xs font-mono text-amber-700">{spiritStones}</span>
-                    </div>
-                </div>
-
-                {/* Center: Active Mission Widget */}
-                <div className="flex-1 flex justify-center items-center pointer-events-none">
-                    <div
-                        onClick={() => toggleMissions(true)}
-                        className="pointer-events-auto hidden lg:flex flex-col px-4 py-1.5 bg-amber-50 border border-amber-200 rounded-lg min-w-[200px] cursor-pointer hover:bg-amber-100 hover:border-amber-300 transition-all text-center relative overflow-hidden"
-                    >
-                        {gameState.missions && gameState.missions.active.length > 0 ? (
-                            (() => {
-                                const mId = gameState.missions.active[0].id;
-                                const mDef = MAIN_QUESTS.find(q => q.id === mId);
-                                return (
-                                    <>
-                                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent"></div>
-                                        <span className="text-xs text-amber-600 font-serif tracking-[0.2em] mb-0.5">
-                                            当前天命
-                                        </span>
-                                        <span className="text-xs text-amber-800 font-serif truncate max-w-[180px]" title={mDef?.description}>
-                                            {mDef?.title || mId}
-                                        </span>
-                                    </>
-                                );
-                            })()
-                        ) : (
-                            <span className="text-xs text-slate-500 font-serif tracking-widest my-auto">无牵云挂挂</span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Right: Tools & Time */}
-                <div className="flex items-center gap-4">
-                    {/* Guide Button */}
+        <div className="relative z-30 shrink-0 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+            <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-2.5">
+                <div className="flex min-w-0 items-center gap-2.5">
                     <button
-                        onClick={() => window.open('https://github.com/Start-0/Aeon/blob/main/README.md', '_blank')}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 transition-all select-none group"
-                        title="游戏指南 (Wiki)"
+                        onClick={() => toggleCharacterSheet(true)}
+                        className="group flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-all hover:border-emerald-300 hover:bg-emerald-50"
                     >
-                        <span className="text-sm font-serif">?</span>
+                        <div className="h-10 w-10 overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm">
+                            <SpiritAvatar seed={gameState.name || '道'} realm={REALMS[gameState.realm_idx]} />
+                        </div>
+                        <div className="min-w-0">
+                            <div className="truncate text-[13px] font-bold tracking-wide text-slate-800 group-hover:text-emerald-700">{gameState.name}</div>
+                            <div className="mt-0.5 text-[11px] text-slate-500">{REALMS[gameState.realm_idx]} · {ageYears}岁</div>
+                            {(isEndingCleared || supportCount > 0) && (
+                                <div className="mt-1 flex flex-wrap gap-1.5">
+                                    {isEndingCleared && (
+                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">
+                                            本轮已通关
+                                        </span>
+                                    )}
+                                    {supportCount > 0 && (
+                                        <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] text-sky-700">
+                                            终局支援 {supportCount}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </button>
 
-                    {/* Save Button */}
+                    <div className="hidden rounded-2xl border border-slate-200 bg-white px-3 py-2 lg:block">
+                        <div className="mb-1 flex items-center justify-between gap-3 text-[10px] text-slate-500">
+                            <span>寿元余势</span>
+                            <span className="font-mono">{Math.max(0, maxLife - ageYears)} / {maxLife}</span>
+                        </div>
+                        <div className="h-2 w-36 overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" style={{ width: `${lifePercent}%` }} />
+                        </div>
+                    </div>
+
+                    <div className="hidden items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 lg:flex">
+                        <Sparkles className="h-4 w-4 text-amber-600" />
+                        <div>
+                            <div className="text-[10px] text-amber-700">灵石</div>
+                            <div className="text-[13px] font-mono font-bold text-amber-800">{spiritStones}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pointer-events-none hidden flex-1 justify-center lg:flex">
+                    <button
+                        onClick={() => toggleMissions(true)}
+                        className={`pointer-events-auto min-w-[220px] max-w-[340px] rounded-2xl border px-3 py-1.5 text-left transition-all ${
+                            isEndingCleared
+                                ? 'border-emerald-200 bg-emerald-50 hover:border-emerald-300 hover:bg-emerald-100'
+                                : isFinalArc
+                                    ? 'border-sky-200 bg-sky-50 hover:border-sky-300 hover:bg-sky-100'
+                                    : 'border-amber-200 bg-amber-50 hover:border-amber-300 hover:bg-amber-100'
+                        }`}
+                    >
+                        {isEndingCleared ? (
+                            <>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[10px] tracking-[0.18em] text-emerald-700">本轮终局</span>
+                                    <span className="rounded-full border border-emerald-300 bg-white/70 px-2 py-0.5 text-[10px] text-emerald-700">
+                                        已通关
+                                    </span>
+                                </div>
+                                <div className="mt-0.5 truncate text-xs font-semibold text-emerald-900">
+                                    黑潮终绝，尘劫暂平
+                                </div>
+                                <div className="mt-0.5 truncate text-[10px] leading-4 text-emerald-800/85">
+                                    你可继续收尾游历、补全成就与战利品，或回到主菜单开启下一世。
+                                </div>
+                                {supportCount > 0 && (
+                                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-emerald-700/80">
+                                        <span>终局援势已兑现</span>
+                                        <span>{supportCount} 项</span>
+                                    </div>
+                                )}
+                            </>
+                        ) : primaryMission ? (
+                            <>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className={`text-[10px] tracking-[0.18em] ${isFinalArc ? 'text-sky-700' : 'text-amber-700'}`}>当前追踪</span>
+                                    <div className="flex items-center gap-1.5">
+                                        {supportCount > 0 && (
+                                            <span className="rounded-full border border-sky-300 bg-white/80 px-2 py-0.5 text-[10px] text-sky-700">
+                                                支援 {supportCount}
+                                            </span>
+                                        )}
+                                        <span className={`rounded-full border bg-white/70 px-2 py-0.5 text-[10px] ${isFinalArc ? 'border-sky-300 text-sky-700' : 'border-amber-300 text-amber-700'}`}>
+                                            {gameState.missions.active.length} 项进行中
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={`mt-0.5 truncate text-xs font-semibold ${isFinalArc ? 'text-sky-900' : 'text-amber-900'}`} title={primaryMission.definition.description}>
+                                    {primaryMission.definition.title}
+                                </div>
+                                <div className={`mt-0.5 truncate text-[10px] leading-4 ${isFinalArc ? 'text-sky-800/85' : 'text-amber-800/85'}`}>
+                                    {primaryMission.objective?.description ?? '查看任务详情'}
+                                </div>
+                                <div className={`mt-1.5 h-1.5 overflow-hidden rounded-full ${isFinalArc ? 'bg-sky-200/80' : 'bg-amber-200/80'}`}>
+                                    <div className={`h-full rounded-full ${isFinalArc ? 'bg-sky-500' : 'bg-amber-500'}`} style={{ width: `${primaryMission.progress}%` }} />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-sm text-slate-500">暂时没有激活任务，先按当前引导继续推进。</div>
+                        )}
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="hidden text-right lg:block">
+                        <div className="text-[10px] text-slate-400">时令</div>
+                        <div className="text-[11px] font-mono text-emerald-700">{getNongliDate(gameState.age, gameState.months, gameState.day || 1)}</div>
+                    </div>
+
                     <button
                         onClick={() => useGameStore.getState().saveGame()}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-all select-none group"
+                        className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
                         title="保存进度"
                     >
-                        <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-                        </svg>
+                        <Save className="h-4 w-4" />
                     </button>
 
-                    {/* Inventory Button */}
                     <button
                         onClick={() => toggleInventory()}
-                        className="px-4 py-1.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 transition-colors font-serif tracking-widest text-sm relative group"
+                        className="hidden items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 transition-all hover:border-amber-300 hover:bg-amber-100 md:flex"
                     >
-                        行 囊
+                        <Briefcase className="h-4 w-4" />
+                        行囊
                     </button>
 
-                    {/* Skills Button */}
                     <button
                         onClick={() => toggleSkills()}
-                        className="px-4 py-1.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 transition-colors font-serif tracking-widest text-sm relative group"
+                        className="hidden items-center gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800 transition-all hover:border-indigo-300 hover:bg-indigo-100 md:flex"
                     >
-                        功 法
+                        <BookOpen className="h-4 w-4" />
+                        功法
                     </button>
 
-                    {/* Map Button */}
                     <button
                         onClick={() => toggleMap(true)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-all select-none group"
+                        className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
                         title="世界地图"
                     >
-                        <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
-                        </svg>
+                        <Compass className="h-4 w-4" />
                     </button>
 
-                    {/* Settings Button */}
                     <button
                         onClick={() => toggleSettings(true)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-all select-none group"
+                        className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700"
                         title="系统设置"
                     >
-                        <svg className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
+                        <Settings className="h-4 w-4" />
                     </button>
-
-                    {/* Date */}
-                    <div className="text-right">
-                        <span className="block text-xs font-mono text-emerald-600/80 tracking-wider">
-                            {getNongliDate(gameState.age, gameState.months, gameState.day || 1)}
-                        </span>
-                    </div>
                 </div>
             </div>
         </div>

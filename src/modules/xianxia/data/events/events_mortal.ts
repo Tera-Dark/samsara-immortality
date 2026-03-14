@@ -1,4 +1,5 @@
 import type { GameEvent } from '../../../../types';
+import { ENEMIES } from '../../../../data/enemies';
 
 const _EVENTS_MORTAL: GameEvent[] = [
     {
@@ -415,6 +416,174 @@ const _EVENTS_MORTAL: GameEvent[] = [
         choices: [
             { text: "认真学习", effect: { INT: 1, CON: 1, history: "经过几次失败后，你终于做出了一道像样的菜。母亲尝了一口，欣慰地笑了。" } },
             { text: "把厨房弄得一团糟", effect: { MOOD: -1, history: "你不小心打翻了油锅，差点着了火。母亲又好气又好笑地赶你出了厨房。" } }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_STUDY_SCHOLAR",
+        title: "私塾旁听",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 6 },
+            { type: 'AGE', op: 'LTE', value: 16 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'STUDY_LIT' }
+        ],
+        probability: 0.18,
+        content: "你在私塾里埋头苦读，恰巧先生讲到志怪杂谈与山川异闻，听得你心神摇曳。",
+        choices: [
+            { text: "继续深究书中典故", effect: { INT: 2, DAO: 1, history: "你顺着典故翻检旧书，第一次认真思考凡俗之外是否真有仙路。" } },
+            { text: "借机练习诗文辞章", effect: { CHR: 2, REP: 1, history: "你写下的小诗被先生当众夸奖，在同窗间小有名气。" } },
+            { text: "记下异闻，准备以后求证", effect: { WIL: 1, INT: 1, history: "你把那些零散线索都记在心里，觉得总有一天会派上用场。" } }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_WORK_MERCHANT",
+        title: "替商队搬货",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 8 },
+            { type: 'AGE', op: 'LTE', value: 18 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'WORK' }
+        ],
+        probability: 0.16,
+        content: "一支过路商队临时在镇口雇人搬货。你忙前忙后，掌柜见你手脚利落，额外多看了你两眼。",
+        choices: [
+            { text: "狠狠干活多赚些钱", effect: { MONEY: 4, STR: 1, history: "你咬牙把最后几口箱子都搬完，掌柜满意地多给了你一份工钱。" } },
+            { text: "趁机打听外界消息", effect: { MONEY: 2, INT: 1, REP: 1, history: "你听商旅讲起外地坊市、宗门和山川秘闻，眼界顿时开阔不少。" } },
+            { text: "帮忙清点账本", conditions: [{ type: 'STAT', target: 'INT', op: 'GTE', value: 10 }], effect: { MONEY: 3, INT: 1, CHR: 1, history: "你替掌柜核对账册没有出错，还因此结识了一位愿意再雇你的老商人。" } }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_EXPLORE_BROKEN_TEMPLE",
+        title: "荒庙香火",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 9 },
+            { type: 'AGE', op: 'LTE', value: 20 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.14,
+        content: "你误入一座半塌的荒庙，供桌上只剩残香与一只蒙尘木匣。殿中风声呜咽，像在催你做出选择。",
+        choices: [
+            { text: "清理香案再离开", effect: { KARMA: 3, DAO: 1, history: "你把香案扶正、杂草清开，离去时心里格外安宁。" } },
+            { text: "打开木匣看看", effect: { items: ['spirit_shard', 'spirit_shard', 'talisman_speed'], history: "木匣里只有几枚灵石碎片和一张发黄的符纸，对现在的你却已算意外之喜。" } },
+            { text: "在庙墙上记下见闻", effect: { INT: 1, WIL: 1, history: "你将庙中壁画与题记细细看过，隐约察觉这地方过去或许并不简单。" } }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_FIRST_MASTERPIECE",
+        title: "一朝开窍",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 10 },
+            { type: 'AGE', op: 'LTE', value: 18 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'STUDY_LIT' },
+            { type: 'STAT', target: 'INT', op: 'GTE', value: 12 }
+        ],
+        probability: 0.1,
+        content: "今天落笔时，你忽然觉得文意和胸中块垒一同舒展开来，似乎正站在开窍的一线边缘。",
+        choices: [
+            { text: "一鼓作气写完", effect: { INT: 2, CHR: 1, REP: 1, history: "你写下的文章连自己读来都觉畅快，先生也难得露出了赞许之色。" } },
+            { text: "收束心神默记要点", effect: { WIL: 2, DAO: 1, history: "你没有贪图一时才气，而是把这缕灵光稳稳记住，反倒更有所得。" } }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_OLD_MASTER_SCROLL",
+        title: "旧武馆残卷",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 10 },
+            { type: 'AGE', op: 'LTE', value: 18 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.12,
+        content: "你在镇外废弃武馆避风时，从塌了一半的兵器架下翻出一卷发黄拳谱，封皮上还留着前代馆主的批注。",
+        choices: [
+            {
+                text: "带回去慢慢研读",
+                effect: { items: ['book_body_art'], STR: 1, WIL: 1, history: "你把拳谱拍净尘土收了起来，觉得今后的出拳总算有了章法。" }
+            },
+            {
+                text: "当场比划几式",
+                effect: { STR: 2, HP: -5, history: "你照着残卷强行试招，摔得灰头土脸，却也摸到了一点发力门道。" }
+            },
+            {
+                text: "只看看就走",
+                effect: { INT: 1, history: "你记下了几处关键图谱，没有贪多，准备以后再来。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_BURROW_HISS",
+        title: "枯井蛇影",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 10 },
+            { type: 'AGE', op: 'LTE', value: 20 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.1,
+        content: "你在荒地边缘发现一口快塌的旧井，正想靠近查看时，井沿石缝里忽然传来细长嘶鸣。",
+        choices: [
+            {
+                text: "提起胆气下去探",
+                effect: { history: "你握紧手边木棍，硬着头皮靠近井口，灰影猛地窜了出来。" },
+                combat: {
+                    type: 'WILD',
+                    enemy: { ...ENEMIES['cave_snake'] }
+                }
+            },
+            {
+                text: "绕开危险改挖井边药草",
+                effect: { items: ['spirit_herb'], WIL: 1, history: "你没有硬闯，而是顺手采走井边几株带着潮气的药草。" }
+            },
+            {
+                text: "拿石头试探后离开",
+                effect: { INT: 1, history: "你先用石头探路，确认确实有活物盘踞后果断离开，没有白吃亏。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_RIVERSIDE_PEDDLE",
+        title: "河滩旧物",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 8 },
+            { type: 'AGE', op: 'LTE', value: 18 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.11,
+        content: "暴雨过后的河滩冲上来不少杂物，你蹲下翻找时，发现其中有几样居然还保留着些许价值。",
+        choices: [
+            {
+                text: "把能卖的全收起来",
+                effect: { MONEY: 6, items: ['spirit_shard'], history: "你把还能用的零碎挑拣干净，带回镇上卖了个不错的价钱。" }
+            },
+            {
+                text: "留意奇形怪状的旧物",
+                effect: { INT: 1, LUCK: 1, items: ['bigu_pill'], history: "你没有只顾着捡钱，反而从泥沙里翻到一瓶还未失效的辟谷丹。" }
+            },
+            {
+                text: "顺手记下河势变化",
+                effect: { DAO: 1, WIL: 1, history: "你盯着河水退去后的纹路看了许久，莫名觉得其中也有几分天地流转的意味。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_MORTAL_TEAHOUSE_LISTEN",
+        title: "茶棚听书",
+        conditions: [
+            { type: 'AGE', op: 'GTE', value: 10 },
+            { type: 'AGE', op: 'LTE', value: 20 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'WORK' }
+        ],
+        probability: 0.1,
+        content: "忙完半日杂活后，你在镇口茶棚歇脚，正好赶上说书人讲到某位散修如何一步步熬出头。",
+        choices: [
+            {
+                text: "留下多听一段",
+                effect: { WIL: 1, DAO: 1, MOOD: 3, history: "你听得入神，忽然觉得凡人日子虽然琐碎，却也未必就不能走出自己的路。" }
+            },
+            {
+                text: "与茶客攀谈外地见闻",
+                effect: { CHR: 1, INT: 1, REP: 1, history: "你和来往茶客聊了不少外地风土，对镇外世界更向往了。" }
+            },
+            {
+                text: "边听边帮老板打下手",
+                effect: { MONEY: 4, CHR: 1, history: "你手脚麻利地帮着添水擦桌，临走时老板多塞了你几枚铜钱。" }
+            }
         ]
     }
 ];

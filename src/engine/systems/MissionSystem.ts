@@ -1,71 +1,27 @@
 import { GameEngine } from '../GameEngine';
-import { MAIN_QUESTS } from '../../data/missions';
+import { ALL_QUESTS } from '../../data/missions';
 import type { Mission, GenericMissionState } from '../../types/missionTypes';
 
 export class MissionSystem {
     static checkMissions(engine: GameEngine) {
+        this.startAvailableMissions(engine);
+
         const activeMissions = engine.state.missions.active;
-        // Iterate backwards to allow safe removal
-        for (let i = activeMissions.length - 1; i >= 0; i--) {
-            const missionState = activeMissions[i];
-            const def = MAIN_QUESTS.find(m => m.id === missionState.id);
+        for (let index = activeMissions.length - 1; index >= 0; index -= 1) {
+            const missionState = activeMissions[index];
+            const def = this.getMissionDef(missionState.id);
             if (!def) continue;
 
             let allObjectivesMet = true;
 
-            // Check Objectives
-            for (const obj of def.objectives) {
-                let currentVal = 0;
+            for (const objective of def.objectives) {
+                const currentValue = this.getObjectiveValue(engine, objective.type, objective.target);
 
-                switch (obj.type) {
-                    case 'STAT':
-                        // Check Attributes (Attributes are flat now)
-                        currentVal = (engine.state.attributes[obj.target] || 0);
-                        break;
-                    case 'AGE':
-                        currentVal = engine.state.age;
-                        break;
-                    case 'REALM':
-                        currentVal = engine.state.realm_idx;
-                        break;
-                    case 'ITEM': {
-                        // Count items in inventory
-                        const count = engine.state.inventory.reduce((sum, slot) => slot.itemId === obj.target ? sum + slot.count : sum, 0);
-                        currentVal = count;
-                        break;
-                    }
-                    case 'LOCATION':
-                        // Check if cur location matches target
-                        currentVal = engine.state.location === obj.target ? 1 : 0;
-                        break;
-                    case 'EVENT':
-                        // Check if event ID is in triggeredEvents
-                        currentVal = engine.state.triggeredEvents.includes(obj.target) ? 1 : 0;
-                        break;
-                    case 'SECT':
-                        // Check if joined any sect (target='ANY') or specific sect
-                        if (obj.target === 'ANY') {
-                            currentVal = engine.state.sect ? 1 : 0;
-                        } else {
-                            currentVal = engine.state.sect === obj.target ? 1 : 0;
-                        }
-                        break;
-                    case 'FLAG':
-                        currentVal = engine.state.flags.includes(obj.target) ? 1 : 0;
-                        break;
-                    case 'INVENTORY': {
-                        const count = engine.state.inventory.reduce((sum, slot) => slot.itemId === obj.target ? sum + slot.count : sum, 0);
-                        currentVal = count;
-                        break;
-                    }
+                if (missionState.objectives[objective.id] !== currentValue) {
+                    missionState.objectives[objective.id] = currentValue;
                 }
 
-                // Update Progress locally
-                if (missionState.objectives[obj.id] !== currentVal) {
-                    missionState.objectives[obj.id] = currentVal;
-                }
-
-                if (currentVal < obj.requiredCount) {
+                if (currentValue < objective.requiredCount) {
                     allObjectivesMet = false;
                 }
             }
@@ -77,69 +33,151 @@ export class MissionSystem {
     }
 
     static completeMission(engine: GameEngine, missionState: GenericMissionState, def: Mission) {
-        // 1. Move to Completed
-        engine.state.missions.active = engine.state.missions.active.filter(m => m.id !== missionState.id);
+        engine.state.missions.active = engine.state.missions.active.filter((mission) => mission.id !== missionState.id);
         engine.state.missions.completed.push(missionState.id);
 
-        // 2. Grant Rewards
-        const rewards = def.rewards;
-        let rewardLog = `完成任务 [${def.title}]！`;
-
-        if (rewards && rewards.effect) {
-            const changes = engine.applyEffect(rewards.effect);
+        let rewardLog = `完成任务 [${def.title}]`;
+        if (def.rewards?.effect) {
+            const changes = engine.applyEffect(def.rewards.effect);
             if (changes.length > 0) {
-                rewardLog += `\n获得: ${changes.join('，')}`;
+                rewardLog += `\n获得: ${changes.join('、')}`;
             }
         }
 
-        // Log completion
-        const currentMonth = engine.state.months % 12;
-        const timeStr = currentMonth > 0 ? `[${engine.state.age}岁${currentMonth}月]` : `[${engine.state.age}岁]`;
+        const timeStr = engine.getTimeStr();
         engine.state.history.push(`${timeStr} ${rewardLog}`);
-        // Also trigger event flavor text?
+
         if (def.endDialog) {
             engine.state.history.push(`${timeStr} ${def.endDialog}`);
         }
 
-        // 3. Chain Next Mission
         if (def.nextMissionId) {
             this.startMission(engine, def.nextMissionId);
         }
+
+        this.startAvailableMissions(engine);
     }
 
     static startMission(engine: GameEngine, missionId: string) {
-        // ID Check
-        if (engine.state.missions.active.some(m => m.id === missionId) ||
-            engine.state.missions.completed.includes(missionId)) {
-            return; // Already active or done
-        }
+        if (engine.state.missions.active.some((mission) => mission.id === missionId)) return;
+        if (engine.state.missions.completed.includes(missionId)) return;
 
-        const def = MAIN_QUESTS.find(m => m.id === missionId);
+        const def = this.getMissionDef(missionId);
         if (!def) return;
-
-        // Requirements Check (Prereq logic can go here)
         if (def.minAge && engine.state.age < def.minAge) return;
+        if (def.prereqMissions && !def.prereqMissions.every((id) => engine.state.missions.completed.includes(id))) return;
+        if (def.functionPrereq && !def.functionPrereq(engine.state)) return;
 
-        // Init State
         const newState: GenericMissionState = {
             id: missionId,
             status: 'ACTIVE',
-            objectives: {}
+            objectives: {},
         };
 
-        // Init Objectives Map
-        def.objectives.forEach(obj => {
-            newState.objectives[obj.id] = 0;
+        def.objectives.forEach((objective) => {
+            newState.objectives[objective.id] = this.getObjectiveValue(engine, objective.type, objective.target);
         });
 
         engine.state.missions.active.push(newState);
+        engine.state.history.push(`${engine.getTimeStr()} 开启新任务：[${def.title}]`);
 
-        // Log Start
-        const currentMonth = engine.state.months % 12;
-        const timeStr = currentMonth > 0 ? `[${engine.state.age}岁${currentMonth}月]` : `[${engine.state.age}岁]`;
-        engine.state.history.push(`${timeStr} 开启新任务: [${def.title}]`);
-
-        // Force immediate check in case conditions are already met
         this.checkMissions(engine);
+    }
+
+    private static getMissionDef(missionId: string) {
+        return ALL_QUESTS.find((mission) => mission.id === missionId);
+    }
+
+    private static startAvailableMissions(engine: GameEngine) {
+        const hasMainMission =
+            engine.state.missions.active.some((mission) => this.getMissionDef(mission.id)?.type === 'MAIN') ||
+            engine.state.missions.completed.some((missionId) => this.getMissionDef(missionId)?.type === 'MAIN');
+
+        if (!hasMainMission) {
+            const firstAvailableMainMission = ALL_QUESTS.find((mission) => this.canStartMission(engine, mission) && mission.type === 'MAIN');
+            if (firstAvailableMainMission) {
+                this.startMission(engine, firstAvailableMainMission.id);
+                return;
+            }
+        }
+
+        const autoUnlockableMissions = ALL_QUESTS.filter((mission) => mission.type !== 'MAIN' && this.canStartMission(engine, mission));
+
+        autoUnlockableMissions.forEach((mission) => {
+            const newState: GenericMissionState = {
+                id: mission.id,
+                status: 'ACTIVE',
+                objectives: {},
+            };
+
+            mission.objectives.forEach((objective) => {
+                newState.objectives[objective.id] = this.getObjectiveValue(engine, objective.type, objective.target);
+            });
+
+            engine.state.missions.active.push(newState);
+            engine.state.history.push(`${engine.getTimeStr()} 开启新任务：[${mission.title}]`);
+        });
+    }
+
+    private static canStartMission(engine: GameEngine, mission: Mission) {
+        if (engine.state.missions.active.some((item) => item.id === mission.id)) return false;
+        if (engine.state.missions.completed.includes(mission.id)) return false;
+        if (mission.minAge && engine.state.age < mission.minAge) return false;
+        if (mission.prereqMissions && !mission.prereqMissions.every((id) => engine.state.missions.completed.includes(id))) return false;
+        if (mission.functionPrereq && !mission.functionPrereq(engine.state)) return false;
+        return true;
+    }
+
+    private static getObjectiveValue(engine: GameEngine, type: Mission['objectives'][number]['type'], target: string) {
+        switch (type) {
+            case 'STAT':
+                return this.getStatObjectiveValue(engine, target);
+            case 'AGE':
+                return engine.state.age;
+            case 'REALM':
+                return engine.state.realm_idx;
+            case 'ITEM':
+            case 'INVENTORY':
+                return engine.state.inventory.reduce((sum, slot) => (slot.itemId === target ? sum + slot.count : sum), 0);
+            case 'LOCATION':
+                return engine.state.location === target ? 1 : 0;
+            case 'EVENT':
+                return engine.state.triggeredEvents.includes(target) ? 1 : 0;
+            case 'SECT':
+                return target === 'ANY' ? (engine.state.sect ? 1 : 0) : engine.state.sect === target ? 1 : 0;
+            case 'FLAG':
+                return engine.state.flags.includes(target) ? 1 : 0;
+            case 'KILL':
+                return engine.state.inventory.reduce((sum, slot) => (slot.itemId === 'monster_core' ? sum + slot.count : sum), 0);
+            default:
+                return 0;
+        }
+    }
+
+    private static getStatObjectiveValue(engine: GameEngine, target: string) {
+        if (target.startsWith('ANY_')) {
+            const threshold = Number(target.split('_')[1] || 0);
+            return Object.values(engine.state.attributes).some((value) => Number(value) >= threshold) ? 1 : 0;
+        }
+
+        if (target.startsWith('INTIMACY_')) {
+            const threshold = Number(target.split('_')[1] || 0);
+            const legacyMet = engine.state.relationships.some((npc) => (npc.intimacy || 0) >= threshold);
+            const worldNpcMet = engine.state.world.worldNPCs.some((npc) => (npc.affinity || 0) >= threshold);
+            return legacyMet || worldNpcMet ? 1 : 0;
+        }
+
+        if (target.startsWith('MONEY_') || target.startsWith('COPPER_')) {
+            const threshold = Number(target.split('_')[1] || 0);
+            return (engine.state.attributes.MONEY || 0) >= threshold ? 1 : 0;
+        }
+
+        const thresholdMatch = target.match(/^([A-Z_]+)_(\d+)$/);
+        if (thresholdMatch) {
+            const [, statKey, thresholdValue] = thresholdMatch;
+            return (engine.state.attributes[statKey] || 0) >= Number(thresholdValue) ? 1 : 0;
+        }
+
+        return engine.state.attributes[target] || 0;
     }
 }

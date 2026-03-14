@@ -17,6 +17,7 @@ export interface Item {
     // [NEW] Equipment Specific Fields
     equipType?: 'WEAPON' | 'ARMOR' | 'ACCESSORY';
     statBonuses?: Partial<import('./index').BattleStats> & Partial<import('./index').CharacterAttributes>;
+    learnSkillId?: string;
 }
 
 export interface InventorySlot {

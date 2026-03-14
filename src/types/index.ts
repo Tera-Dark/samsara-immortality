@@ -39,6 +39,10 @@ export interface Effect {
     items?: string[];
     /** 获得单个物品 ID */
     item?: string;
+    /** 随机增加属性池及总分配数量 */
+    random_stats?: { pool: string[], totalAmount: number };
+    /** 随机获得物品池及总获取数量 */
+    random_items?: { pool: string[], totalCount: number };
 }
 
 export type TalentEffect = Effect;
@@ -95,14 +99,32 @@ export interface EventOutcome {
     effect?: Effect; // Re-use generic effect for simple stat changes
     death?: boolean;
     nextEventId?: string; // Chain events
-    combat?: { enemy: Partial<CombatEntity>, type?: CombatState['type'] }; // Trigger combat
+    combat?: {
+        enemy: Partial<CombatEntity>,
+        type?: CombatState['type'],
+        victoryFlags?: string[],
+        victoryHistory?: string,
+        nextEnemy?: Partial<CombatEntity>,
+        nextType?: CombatState['type'],
+        nextVictoryFlags?: string[],
+        nextVictoryHistory?: string,
+    }; // Trigger combat
 }
 
 export interface EventChoice {
     text: string;
     conditions?: Condition[]; // V2
     effect?: Effect;
-    combat?: { enemy: Partial<CombatEntity>, type?: CombatState['type'] }; // Trigger combat
+    combat?: {
+        enemy: Partial<CombatEntity>,
+        type?: CombatState['type'],
+        victoryFlags?: string[],
+        victoryHistory?: string,
+        nextEnemy?: Partial<CombatEntity>,
+        nextType?: CombatState['type'],
+        nextVictoryFlags?: string[],
+        nextVictoryHistory?: string,
+    }; // Trigger combat
 }
 
 export interface GameEvent {
@@ -304,12 +326,17 @@ export interface PlayerState {
 
     // [NEW] Tutorial State
     tutorialCompleted: boolean;
+    deathKarmaClaimed: boolean;
 
     // [NEW] 世界定位
     /** 当前所在区域ID */
     location: string;
     /** 所属宗门ID, null = 散修 */
     sect: string | null;
+    sectState?: import('../data/sects').SectState | null;
+
+    /** 洞府与灵田状态 */
+    abode?: import('../data/abode').AbodeState;
 
     // [NEW] Personality & Acquired Traits
     personality: { [key: string]: number };

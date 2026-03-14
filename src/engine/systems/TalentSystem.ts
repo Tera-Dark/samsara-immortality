@@ -19,11 +19,17 @@ export class TalentSystem {
                 // Probability Check
                 if (mod.probability !== undefined && Math.random() > mod.probability) return;
 
+                let triggeredAny = false;
+                const changes: string[] = [];
+
                 // Apply Effects (Standardized)
                 if (mod.stats) {
                     for (const [k, v] of Object.entries(mod.stats)) {
                         if (v !== undefined) {
                             engine.state.attributes[k] = (engine.state.attributes[k] || 0) + v;
+                            const statName = TEXT_CONSTANTS.STATS[k as keyof typeof TEXT_CONSTANTS.STATS] || k;
+                            changes.push(`${statName} +${v}`);
+                            triggeredAny = true;
                         }
                     }
                 }
@@ -32,6 +38,8 @@ export class TalentSystem {
                     for (const [k, v] of Object.entries(mod.battle)) {
                         if (engine.state.battleStats[k] !== undefined && v !== undefined) {
                             engine.state.battleStats[k] += v;
+                            changes.push(`${k} +${v}`);
+                            triggeredAny = true;
                         }
                     }
                 }
@@ -40,12 +48,21 @@ export class TalentSystem {
                     for (const [k, v] of Object.entries(mod.resource)) {
                         if (v === undefined) continue;
                         if (k === 'SPIRIT_STONES') {
-                            // 统一写入 MONEY 属性
                             engine.state.attributes.MONEY = (engine.state.attributes.MONEY || 0) + v;
+                            changes.push(`灵石 +${v}`);
+                            triggeredAny = true;
                         } else {
                             engine.state.home.resources[k] = (engine.state.home.resources[k] || 0) + v;
+                            triggeredAny = true;
                         }
                     }
+                }
+
+                // If this was a probability-based trigger (like TURN_END occasional events) and it succeeded, push a log
+                if (mod.probability !== undefined && triggeredAny) {
+                     // The history array takes strings
+                     const ageStr = engine.state.age > 0 ? `[${engine.state.age}岁] ` : '';
+                     engine.state.history.unshift(`${ageStr}你的命格【${talent.name}】触发：${changes.join(', ')}`);
                 }
             });
         });

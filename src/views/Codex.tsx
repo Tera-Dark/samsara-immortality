@@ -10,6 +10,7 @@ import { RealmsView } from './codex/RealmsView';
 import type { MissionType } from '../types/missionTypes';
 import { XIANXIA_SYSTEMS } from '../modules/xianxia/data/systems';
 import { ALL_QUESTS, MAIN_QUESTS, SIDE_QUESTS, SPECIAL_QUESTS } from '../data/missions';
+import { formatEffectToTags } from '../utils/effectFormatter';
 import * as LucideIcons from 'lucide-react';
 
 const renderLucideIcon = (iconName: string, className?: string) => {
@@ -486,9 +487,20 @@ export const Codex = () => {
                                             <span className="w-1 h-3.5 bg-emerald-400 rounded-full"></span>
                                             任务奖励
                                         </h4>
-                                        <div className="px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-lg text-base font-serif text-emerald-700 flex items-center gap-2">
-                                            <span className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 font-serif text-xs shrink-0">赏</span>
-                                            {quest.rewards.text}
+                                        <div className="px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-lg flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 text-base font-serif text-emerald-700">
+                                                <span className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 font-serif text-xs shrink-0">赏</span>
+                                                {quest.rewards.text}
+                                            </div>
+                                            {quest.rewards.effect && (
+                                                <div className="flex flex-wrap gap-2 pl-8">
+                                                    {formatEffectToTags(quest.rewards.effect).map((tag, idx) => (
+                                                        <span key={idx} className="px-2 py-0.5 bg-emerald-100/50 text-emerald-700 text-xs font-mono rounded border border-emerald-200/50">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

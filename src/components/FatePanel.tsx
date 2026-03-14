@@ -1,6 +1,7 @@
-﻿import type { FC } from 'react';
-import type { FateEntry, FortuneBuff, FateGrade, Talent } from '../types';
-import { FATE_GRADE_NAMES, FATE_GRADE_COLORS } from '../types';
+import type { FC } from 'react';
+import { Sparkles, Star } from 'lucide-react';
+import type { FateEntry, FateGrade, FortuneBuff, Talent } from '../types';
+import { FATE_GRADE_COLORS, FATE_GRADE_NAMES } from '../types';
 
 interface FatePanelProps {
     fate: FateEntry[];
@@ -8,151 +9,120 @@ interface FatePanelProps {
     talents?: Talent[];
 }
 
-/** 等级色牌组件 */
 const GradeBadge: FC<{ grade: FateGrade; name: string; small?: boolean }> = ({ grade, name, small }) => {
     const color = FATE_GRADE_COLORS[grade];
-    const gradeName = FATE_GRADE_NAMES[grade];
-
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded ${small ? 'px-1.5 py-0' : 'px-2 py-0.5'}`}
-            style={{
-                border: `1px solid ${color}50`,
-                background: `${color}15`,
-            }}
+            className={`inline-flex items-center gap-1.5 rounded-full border ${small ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1 text-xs'}`}
+            style={{ borderColor: `${color}55`, backgroundColor: `${color}14` }}
         >
-            {/* 等级徽章 */}
-            <span
-                className={`font-bold ${small ? 'text-[10px]' : 'text-xs'}`}
-                style={{
-                    color: color,
-                    textShadow: `0 0 6px ${color}80`,
-                }}
-            >
-                {gradeName}
+            <span className="font-bold" style={{ color }}>
+                {FATE_GRADE_NAMES[grade]}
             </span>
-            {/* 名称 */}
-            <span
-                className={`font-serif ${small ? 'text-[11px]' : 'text-xs'}`}
-                style={{ color: color }}
-            >
+            <span className="font-medium" style={{ color }}>
                 {name}
             </span>
         </span>
     );
 };
 
-/** 先天命格 + 后天气运面板 */
+const EmptyBlock: FC<{ title: string }> = ({ title }) => (
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+        {title}
+    </div>
+);
+
 export const FatePanel: FC<FatePanelProps> = ({ fate = [], fortuneBuffs = [], talents = [] }) => {
     return (
-        <div className="space-y-3">
-            {/* 先天命格(天赋) */}
-            {talents.length > 0 && (
-                <div>
-                    <div className="text-[10px] text-slate-600 tracking-wider mb-1.5 font-mono">先天天赋</div>
-                    <div className="flex flex-wrap gap-1.5">
-                        {talents.map(t => {
-                            const color = FATE_GRADE_COLORS[t.grade as FateGrade] || '#6b7280';
-                            const gradeName = FATE_GRADE_NAMES[t.grade as FateGrade] || '凡';
-                            return (
-                                <div key={t.id} className="group relative">
-                                    <span
-                                        className="inline-flex items-center gap-1 rounded px-2 py-0.5"
-                                        style={{ border: `1px solid ${color}50`, background: `${color}15` }}
-                                    >
-                                        <span className="font-bold text-xs" style={{ color, textShadow: `0 0 6px ${color}80` }}>{gradeName}</span>
-                                        <span className="font-serif text-xs" style={{ color }}>{t.name}</span>
-                                    </span>
-                                    <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1
-                                        opacity-0 group-hover:opacity-100 pointer-events-none
-                                        transition-opacity duration-200
-                                        bg-white/95 border border-slate-200 rounded-md px-2.5 py-1.5
-                                        min-w-[160px] text-center shadow-xl">
-                                        <p className="text-xs text-slate-600 whitespace-nowrap">{t.description}</p>
+        <div className="space-y-4">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                    <Star className="h-4 w-4 text-amber-500" />
+                    <div className="text-sm font-semibold text-slate-800">先天底色</div>
+                </div>
+                <div className="space-y-3">
+                    <div>
+                        <div className="mb-2 text-[11px] tracking-[0.22em] text-slate-500">先天天赋</div>
+                        {talents.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {talents.map((talent) => (
+                                    <div key={talent.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                        <GradeBadge grade={talent.grade as FateGrade} name={talent.name} />
+                                        <div className="mt-2 text-xs leading-5 text-slate-500">{talent.description}</div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                ))}
+                            </div>
+                        ) : (
+                            <EmptyBlock title="暂无先天天赋" />
+                        )}
+                    </div>
+
+                    <div>
+                        <div className="mb-2 text-[11px] tracking-[0.22em] text-slate-500">先天命格</div>
+                        {fate.length > 0 ? (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {fate.map((entry) => (
+                                    <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                        <GradeBadge grade={entry.grade} name={entry.name} />
+                                        <div className="mt-2 text-xs leading-5 text-slate-600">{entry.description}</div>
+                                        {entry.effects && Object.keys(entry.effects).length > 0 && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {Object.entries(entry.effects).map(([key, value]) => (
+                                                    <span key={key} className={`rounded-full px-2 py-1 text-[11px] font-mono ${value > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                                        {key} {value > 0 ? '+' : ''}{value}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <EmptyBlock title="命格未定" />
+                        )}
                     </div>
                 </div>
-            )}
+            </section>
 
-            {/* 先天命格 */}
-            <div>
-                <div className="text-[10px] text-slate-600 tracking-wider mb-1.5 font-mono">先天命格</div>
-                <div className="flex flex-wrap gap-1.5">
-                    {fate.length > 0 ? (
-                        fate.map(f => (
-                            <div key={f.id} className="group relative">
-                                <GradeBadge grade={f.grade} name={f.name} />
-                                {/* Hover Tooltip */}
-                                <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1
-                                    opacity-0 group-hover:opacity-100 pointer-events-none
-                                    transition-opacity duration-200
-                                    bg-white/95 border border-slate-200 rounded-md px-2.5 py-1.5
-                                    min-w-[160px] text-center shadow-xl">
-                                    <p className="text-xs text-slate-600 whitespace-nowrap">{f.description}</p>
-                                    {f.effects && Object.keys(f.effects).length > 0 && (
-                                        <p className="text-[10px] text-emerald-400/80 mt-0.5">
-                                            {Object.entries(f.effects).map(([k, v]) =>
-                                                `${k} ${v > 0 ? '+' : ''}${v}`
-                                            ).join('  ')}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <span className="text-xs text-slate-600 italic">命格未定</span>
-                    )}
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-sky-500" />
+                    <div className="text-sm font-semibold text-slate-800">后天气运</div>
                 </div>
-            </div>
-
-            {/* 后天气运 */}
-            <div>
-                <div className="text-[10px] text-slate-600 tracking-wider mb-1.5 font-mono">后天气运</div>
-                <div className="space-y-1">
-                    {fortuneBuffs.length > 0 ? (
-                        fortuneBuffs.map(buff => (
-                            <div key={buff.id} className="group relative flex items-center gap-2">
-                                <GradeBadge grade={buff.grade} name={buff.name} small />
-                                {/* 剩余时间进度条 */}
-                                <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+                {fortuneBuffs.length > 0 ? (
+                    <div className="space-y-3">
+                        {fortuneBuffs.map((buff) => (
+                            <div key={buff.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <GradeBadge grade={buff.grade} name={buff.name} small />
+                                    <div className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-mono text-slate-600">
+                                        {buff.remainingMonths}/{buff.durationMonths} 月
+                                    </div>
+                                </div>
+                                <div className="mt-2 text-xs leading-5 text-slate-600">{buff.description}</div>
+                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
                                     <div
-                                        className="h-full rounded-full transition-all duration-500"
+                                        className="h-full rounded-full"
                                         style={{
-                                            width: `${(buff.remainingMonths / buff.durationMonths) * 100}%`,
-                                            background: FATE_GRADE_COLORS[buff.grade],
-                                            opacity: 0.6,
+                                            width: `${Math.max(0, Math.min(100, (buff.remainingMonths / Math.max(1, buff.durationMonths)) * 100))}%`,
+                                            backgroundColor: FATE_GRADE_COLORS[buff.grade],
                                         }}
                                     />
                                 </div>
-                                <span className="text-[10px] text-slate-600 tabular-nums w-10 text-right shrink-0">
-                                    {buff.remainingMonths}月
-                                </span>
-                                {/* Hover Tooltip */}
-                                <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1
-                                    opacity-0 group-hover:opacity-100 pointer-events-none
-                                    transition-opacity duration-200
-                                    bg-white/95 border border-slate-200 rounded-md px-2.5 py-1.5
-                                    min-w-[180px] text-center shadow-xl">
-                                    <p className="text-xs text-slate-600">{buff.description}</p>
-                                    <p className="text-[10px] text-amber-400/80 mt-0.5">
-                                        {Object.entries(buff.effects).map(([k, v]) =>
-                                            `${k} ${v > 0 ? '+' : ''}${v}`
-                                        ).join('  ')}
-                                    </p>
-                                    <p className="text-[10px] text-slate-500 mt-0.5">
-                                        剩余 {buff.remainingMonths}/{buff.durationMonths} 月
-                                    </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {Object.entries(buff.effects).map(([key, value]) => (
+                                        <span key={key} className={`rounded-full px-2 py-1 text-[11px] font-mono ${value > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                            {key} {value > 0 ? '+' : ''}{value}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <span className="text-xs text-slate-600 italic">暂无气运加持</span>
-                    )}
-                </div>
-            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <EmptyBlock title="暂无气运加持" />
+                )}
+            </section>
         </div>
     );
 };

@@ -442,6 +442,227 @@ const _EVENTS_QI: GameEvent[] = [
                 }
             }
         ]
+    },
+    {
+        id: "EVT_QI_CULTIVATION_INSIGHT",
+        title: "吐纳有感",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'CULTIVATE' }
+        ],
+        probability: 0.12,
+        content: "你在一呼一吸间忽然察觉周身灵气流转的细微差异，原本晦涩的经脉路线似乎一下子清晰起来。",
+        choices: [
+            { text: "顺势冲开经脉", effect: { EXP: 180, MP: 20, history: "你借着这缕感悟一鼓作气冲开了数处细小阻滞，修炼速度明显快了不少。" } },
+            { text: "缓缓记下体悟", effect: { INT: 2, WIL: 1, history: "你没有贪功冒进，而是把这份灵感一点点沉淀为自己的根基。" } }
+        ]
+    },
+    {
+        id: "EVT_QI_MARKET_FIND",
+        title: "旧摊奇货",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'AGE', op: 'GTE', value: 14 }
+        ],
+        probability: 0.08,
+        content: "坊市角落有个无人问津的旧摊，摊主懒洋洋地靠着柱子打盹。几件不起眼的旧物里似乎藏着点门道。",
+        choices: [
+            { text: "买下那枚残旧玉简", conditions: [{ type: 'STAT', target: 'MONEY', op: 'GTE', value: 12 }], effect: { MONEY: -12, items: ['book_fire_art'], history: "你擦去玉简上的灰尘，竟得到一门粗浅却实用的火法。" } },
+            { text: "挑一张保命符箓", conditions: [{ type: 'STAT', target: 'MONEY', op: 'GTE', value: 8 }], effect: { MONEY: -8, items: ['talisman_armor', 'talisman_speed'], history: "虽然只是低阶符箓，但对初入仙途的你来说已颇为实用。" } },
+            { text: "只看不买", effect: { INT: 1, history: "你和摊主闲聊了几句，学到不少辨认旧物真伪的门道。" } }
+        ]
+    },
+    {
+        id: "EVT_QI_HELP_FELLOW",
+        title: "同行散修",
+        conditions: [
+            { type: 'REALM', op: 'EQ', value: 1 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.1,
+        content: "你在野外碰到一名受伤的散修，对方气息紊乱、法袍染血，却依旧紧紧护着怀里的包裹。",
+        choices: [
+            { text: "出手相助", effect: { KARMA: 5, items: ['healing_pill_small', 'spirit_herb'], history: "你替他止血包扎，对方临走前送了你一些草药和疗伤丹药作为谢礼。" } },
+            { text: "交换资源各取所需", conditions: [{ type: 'STAT', target: 'CHR', op: 'GTE', value: 12 }], effect: { MONEY: 15, items: ['iron_sword'], history: "你与对方做了一笔公平交易，用随身杂物换来一柄勉强可用的飞剑胚子。" } },
+            { text: "谨慎离开", effect: { WIL: 1, history: "你不愿贸然卷入他人的因果，略作观察后便悄然离去。" } }
+        ]
+    },
+    {
+        id: "EVT_QI_NIGHT_MARKET",
+        title: "夜坊灯火",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'AGE', op: 'GTE', value: 16 }
+        ],
+        probability: 0.08,
+        content: "夜幕降临后，坊市深巷里另有一层热闹。灯笼低垂，人声压得极轻，摆在摊上的东西却明显比白日更有意思。",
+        choices: [
+            { text: "买一件趁手护具", conditions: [{ type: 'STAT', target: 'MONEY', op: 'GTE', value: 20 }], effect: { MONEY: -20, items: ['cloth_armor'], history: "你淘到一件勉强合身的护具，虽然不是法器，却能实打实保命。" } },
+            { text: "打听秘境传闻", effect: { INT: 1, DAO: 1, REP: 1, history: "你在夜坊听来不少真假难辨的秘境消息，虽未必全真，却拓宽了眼界。" } },
+            { text: "顺手捡漏", conditions: [{ type: 'STAT', target: 'LUCK', op: 'GTE', value: 12 }], effect: { items: ['spirit_shard', 'spirit_shard', 'spirit_shard', 'bigu_pill'], history: "你在一堆杂物里翻出几枚灵石碎片和一瓶便宜却实用的辟谷丹。" } }
+        ]
+    },
+    {
+        id: "EVT_QI_SWORD_REPAIR_STALL",
+        title: "旧剑摊",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'AGE', op: 'GTE', value: 14 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.09,
+        content: "坊市边角有个替人修补飞剑的老修士，摊上堆满断剑、旧玉简和没人认领的护腕，像是专给散修捡漏的地方。",
+        choices: [
+            {
+                text: "买下带剑意的旧玉简",
+                conditions: [{ type: 'STAT', target: 'MONEY', op: 'GTE', value: 15 }],
+                effect: { MONEY: -15, items: ['book_sword_art'], history: "你挑中的旧玉简剑意未散，虽然残缺，却足够你入门御剑法。" }
+            },
+            {
+                text: "帮他打下手换报酬",
+                effect: { MONEY: 8, items: ['iron_sword'], INT: 1, history: "你替老修士分拣断剑、擦拭法器，临走时换到一柄还能用的精铁剑。" }
+            },
+            {
+                text: "讨教身法避锋",
+                conditions: [{ type: 'STAT', target: 'SPD', op: 'GTE', value: 16 }],
+                effect: { items: ['book_phantom_step'], SPD: 1, history: "老修士见你步子轻，指点了几句卸力诀窍，还把一份旧身法拓本送给了你。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_QI_FOGGY_MARSH",
+        title: "雾沼异动",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.08,
+        content: "你穿过低洼湿地时，四周雾气忽然凝而不散，水面下像有什么东西正在缓缓抬头。",
+        choices: [
+            {
+                text: "强行破雾杀过去",
+                effect: {
+                    history: "你催动真气驱散身前水雾，一道带着湿冷腥气的灵体朝你扑来。"
+                },
+                combat: {
+                    type: 'WILD',
+                    enemy: { ...ENEMIES['marsh_spirit'] }
+                }
+            },
+            {
+                text: "沿边缘搜刮灵材就退",
+                effect: { items: ['spirit_herb', 'spirit_shard'], MONEY: 12, history: "你没深入雾沼，只在外围搜到些零散灵材，见好就收。" }
+            },
+            {
+                text: "借风势迅速脱身",
+                effect: { SPD: 1, WIL: 1, history: "你判断此地不宜久留，立刻运转身法抽身离去，反而磨炼了自己的步法。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_QI_WANDERING_BLADE",
+        title: "刀客拦路",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'AGE', op: 'GTE', value: 16 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.07,
+        content: "山道尽头，一个提刀散修靠在古松下打量你许久，忽然笑说正缺个试刀的人。",
+        choices: [
+            {
+                text: "应战试试成色",
+                effect: {
+                    history: "你也不退让，当即亮出兵刃，准备拿这一战试试自己近来的修行成果。"
+                },
+                combat: {
+                    type: 'WILD',
+                    enemy: { ...ENEMIES['wandering_blade'] }
+                }
+            },
+            {
+                text: "丢几块灵石消灾",
+                conditions: [{ type: 'STAT', target: 'MONEY', op: 'GTE', value: 20 }],
+                effect: { MONEY: -20, MOOD: -5, history: "你不想在山路上平白消耗，干脆破财消灾，对方也懒得继续纠缠。" }
+            },
+            {
+                text: "记下他的招路再退",
+                effect: { INT: 1, SPD: 1, history: "你没有硬接，而是远远观察对方的站姿与拔刀节奏，暗自记下不少细节。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_QI_RUINED_CAMP",
+        title: "荒营余烬",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.09,
+        content: "你在山坳里发现一处刚熄不久的营地，火堆还带着温度，四周却空无一人，像是有人仓促撤离。",
+        choices: [
+            {
+                text: "搜查还能用的补给",
+                effect: { items: ['healing_pill_small', 'spirit_shard'], MONEY: 8, history: "你在营地角落翻到些散碎补给和遗落灵石，看来上一批人走得确实匆忙。" }
+            },
+            {
+                text: "顺着脚印追查去向",
+                effect: { EXP: 45, INT: 1, history: "你沿着混乱脚印追出一段路，虽没追上人，却借此熟悉了这片山地的气机流向。" }
+            },
+            {
+                text: "只在远处观察局势",
+                effect: { REP: 1, WIL: 1, history: "你没有贸然靠近，而是默默记下营地痕迹和撤退方向，准备日后再做打算。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_QI_HERB_GARDEN_ERRAND",
+        title: "灵药园杂务",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'WORK' }
+        ],
+        probability: 0.09,
+        content: "你替人照看山脚灵药园时，发现不少活其实并不难，只是需要足够耐心和一点辨药眼力。",
+        choices: [
+            {
+                text: "认真分拣药材",
+                effect: { items: ['spirit_herb', 'spirit_herb'], INT: 1, MONEY: 10, history: "你把药性相近的灵草分得清清楚楚，药园主人高兴地给了你报酬。" }
+            },
+            {
+                text: "顺手记下灵草长势",
+                effect: { INT: 1, DAO: 1, EXP: 35, history: "你观察了整整半日灵草在晨昏间的变化，对灵气涨落又多懂了一层。" }
+            },
+            {
+                text: "替主人巡园驱虫",
+                effect: { WIL: 1, items: ['talisman_speed'], history: "你忙上忙下把整片药园照料妥当，主人干脆送了你一张平日自用的轻身符。" }
+            }
+        ]
+    },
+    {
+        id: "EVT_QI_MARKET_MEDIATION",
+        title: "坊市调停",
+        conditions: [
+            { type: 'REALM', op: 'GTE', value: 1 },
+            { type: 'ROOT_STATE', target: 'action', op: 'EQ', value: 'EXPLORE' }
+        ],
+        probability: 0.08,
+        content: "你路过坊市时，正撞见两名散修因一件旧法器吵得面红耳赤，旁边摊主已经快被闹得做不成生意了。",
+        choices: [
+            {
+                text: "出面讲和",
+                conditions: [{ type: 'STAT', target: 'CHR', op: 'GTE', value: 12 }],
+                effect: { REP: 2, MONEY: 12, history: "你几句话便把价码和来路理顺，双方居然都认了你的面子。" }
+            },
+            {
+                text: "趁乱看看他们争的东西",
+                effect: { INT: 1, items: ['spirit_shard', 'bigu_pill'], history: "你没卷进争执，反倒从旁边摊位捡了点便宜又实用的小东西。" }
+            },
+            {
+                text: "默默记下坊市规矩",
+                effect: { CHR: 1, DAO: 1, history: "你没有插手，只把众人的反应和坊市默认的规矩一一记在心里。" }
+            }
+        ]
     }
 ];
 

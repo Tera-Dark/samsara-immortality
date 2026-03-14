@@ -5,7 +5,7 @@ import { ConfigEditor } from './ConfigEditor';
 import { ScrollText, Wrench, Settings } from 'lucide-react';
 
 export const EditorLayout: React.FC = () => {
-    const { engine } = useGameStore();
+    const { engine, hotReloadRuntimeData } = useGameStore();
     const [activeTab, setActiveTab] = useState<'CONFIG' | 'EVENTS'>('EVENTS');
 
     return (
@@ -53,7 +53,7 @@ export const EditorLayout: React.FC = () => {
                     <div className="flex gap-3">
                         <button
                             onClick={() => {
-                                engine.hotReload(engine.moduleConfig, engine.events);
+                                hotReloadRuntimeData();
                                 alert('✓ 更改已应用到运行中的引擎');
                             }}
                             className="px-4 py-1.5 bg-blue-700 hover:bg-blue-600 rounded text-xs text-white transition-colors"

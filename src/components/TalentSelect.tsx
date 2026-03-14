@@ -8,7 +8,8 @@ import { TalentCard } from './TalentCard';
 export const TalentSelect = () => {
     const { availableTalents, selectedTalentIds, selectTalent, confirmTalents, talentResetCount, resetTalents } = useCreationStore();
     const metaState = useMetaStore(s => s.metaState);
-    const canConfirm = selectedTalentIds.length === 3;
+    const maxTalents = 3 + (metaState.unlockedUpgrades['meta_talent_slot'] || 0);
+    const canConfirm = selectedTalentIds.length === maxTalents;
 
     // Calculate reset cost/limits
     const maxResets = 3 + (metaState.unlockedUpgrades['meta_resets'] || 0);
@@ -37,7 +38,7 @@ export const TalentSelect = () => {
                     {selectedTalentIds.length}
                 </span>
                 <span className="text-slate-600 font-mono">/</span>
-                <span className="text-slate-600 font-mono">3</span>
+                <span className="text-slate-600 font-mono">{maxTalents}</span>
             </div>
 
             {/* Main Content Area - Grid */}

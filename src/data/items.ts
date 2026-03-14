@@ -91,12 +91,29 @@ export const ITEMS: Record<string, Item> = {
         description: '凡人亦可修炼的基础木属性功法，中正平和，能滋养肉身。',
         stackable: false,
         value: 100,
+        learnSkillId: 'heal_light',
         effect: {
             flags: ['HAS_CULTIVATION_METHOD', 'METHOD_CHANGCHUN'],
             INT: 1,
             history: '你研读了《长春功》，将其要诀牢记于心。'
         },
         icon: '卷'
+    },
+    'book_body_art': {
+        id: 'book_body_art',
+        name: '撼山拳谱',
+        type: 'CONSUMABLE',
+        rarity: 'COMMON',
+        description: '凡俗武馆流出的入门拳谱，重在稳扎稳打，适合前期防止战斗手感单一。',
+        stackable: false,
+        value: 80,
+        learnSkillId: 'crashing_fist',
+        effect: {
+            STR: 1,
+            CON: 1,
+            history: '你照着拳谱反复演练，出拳终于不再只是胡乱挥打。'
+        },
+        icon: '拳'
     },
     'book_sword_art': {
         id: 'book_sword_art',
@@ -106,6 +123,7 @@ export const ITEMS: Record<string, Item> = {
         description: '流传甚广的剑修入门功法，杀伐果断。',
         stackable: false,
         value: 300,
+        learnSkillId: 'sword_control',
         effect: {
             flags: ['HAS_CULTIVATION_METHOD', 'METHOD_SWORD'],
             ATK: 5,
@@ -411,6 +429,7 @@ export const ITEMS: Record<string, Item> = {
         description: '火系入门功法玉简，记载了操控凡火的心得。',
         stackable: false,
         value: 200,
+        learnSkillId: 'fireball',
         effect: {
             flags: ['HAS_CULTIVATION_METHOD', 'METHOD_FIRE'],
             ATK: 3,
@@ -426,6 +445,7 @@ export const ITEMS: Record<string, Item> = {
         description: '一种极为灵动的身法，练至大成可踏雪无痕。',
         stackable: false,
         value: 800,
+        learnSkillId: 'phantom_step',
         effect: {
             flags: ['HAS_AGILITY_METHOD'],
             SPD: 10,
@@ -460,7 +480,94 @@ export const ITEMS: Record<string, Item> = {
             history: '金刚符化作点点金光笼罩全身。'
         },
         icon: '符'
-    }
+    },
+
+    // ─── 炼丹专用灵草材料 ───
+    'fire_seed': {
+        id: 'fire_seed',
+        name: '赤焰火种',
+        type: 'MATERIAL',
+        rarity: 'UNCOMMON',
+        description: '蕴含地火精华的种子，是炼制丹药时引火入炉的关键催化剂。',
+        stackable: true,
+        value: 35,
+        icon: '火'
+    },
+    'ice_lotus': {
+        id: 'ice_lotus',
+        name: '千年冰莲',
+        type: 'MATERIAL',
+        rarity: 'RARE',
+        description: '生长于万年冰窟深处的奇花，花瓣晶莹如玉，是炼制培元、洗髓类丹药的核心灵药。',
+        stackable: true,
+        value: 300,
+        icon: '莲'
+    },
+    'dragon_saliva_herb': {
+        id: 'dragon_saliva_herb',
+        name: '龙涎草',
+        type: 'MATERIAL',
+        rarity: 'RARE',
+        description: '传说因真龙口涎滋润一方灵土而生的异草，药香浓烈，可入高阶丹方。',
+        stackable: true,
+        value: 500,
+        icon: '龙'
+    },
+    'purple_cloud_fruit': {
+        id: 'purple_cloud_fruit',
+        name: '紫云果',
+        type: 'MATERIAL',
+        rarity: 'EPIC',
+        description: '仅在紫霄峰绝巅云海中结果的圣果，百年一熟，服之可通灵窍。是炼制筑基丹与增寿丹的关键。',
+        stackable: true,
+        value: 2000,
+        icon: '果'
+    },
+
+    // ─── 炼丹成品：新增丹药 ───
+    'peiyuan_pill': {
+        id: 'peiyuan_pill',
+        name: '培元丹',
+        type: 'CONSUMABLE',
+        rarity: 'UNCOMMON',
+        description: '温补根基之丹，服用后资质略有提升，修炼速度永久增加。',
+        stackable: true,
+        value: 200,
+        effect: {
+            POT: 1,
+            history: '培元丹化作暖流流遍经脉，根基更加稳固了。'
+        },
+        icon: '丹'
+    },
+    'xisui_pill': {
+        id: 'xisui_pill',
+        name: '洗髓丹',
+        type: 'CONSUMABLE',
+        rarity: 'RARE',
+        description: '脱胎换骨之丹，服用后洗涤经脉杂质，体魄与悟性永久提升。',
+        stackable: true,
+        value: 800,
+        effect: {
+            STR: 2,
+            INT: 2,
+            history: '洗髓丹药力在体内炸开，剧痛过后浑身轻松了许多，仿佛脱胎换骨。'
+        },
+        icon: '丹'
+    },
+    'zengshou_pill': {
+        id: 'zengshou_pill',
+        name: '增寿丹',
+        type: 'CONSUMABLE',
+        rarity: 'LEGENDARY',
+        description: '逆天改命的无上神丹，服用后可延长寿元五十年。',
+        stackable: true,
+        value: 50000,
+        effect: {
+            LIFESPAN: 600, // 50 years * 12 months
+            history: '增寿丹入腹，仿佛有一股鸿蒙之力洗涤四肢百骸，你感觉...生命的尽头被推远了。'
+        },
+        icon: '丹'
+    },
 };
 
 export const LOOT_TABLES = {
@@ -469,6 +576,7 @@ export const LOOT_TABLES = {
         { itemId: 'spirit_shard', weight: 30, min: 2, max: 5 },
         { itemId: 'iron', weight: 10, min: 1, max: 1 },
         { itemId: 'spirit_herb', weight: 5, min: 1, max: 1 },
+        { itemId: 'book_body_art', weight: 2, min: 1, max: 1 },
         { itemId: 'iron_sword', weight: 2, min: 1, max: 1 },
         { itemId: 'cloth_armor', weight: 2, min: 1, max: 1 },
         { itemId: 'monster_core', weight: 3, min: 1, max: 1 }
@@ -477,6 +585,7 @@ export const LOOT_TABLES = {
         { itemId: 'spirit_stone', weight: 50, min: 10, max: 30 },
         { itemId: 'minor_heal_pill', weight: 20, min: 1, max: 2 },
         { itemId: 'talisman_fire', weight: 15, min: 1, max: 1 },
+        { itemId: 'book_sword_art', weight: 4, min: 1, max: 1 },
         { itemId: 'jade_sword', weight: 5, min: 1, max: 1 },
         { itemId: 'silk_robe', weight: 5, min: 1, max: 1 },
         { itemId: 'century_ginseng', weight: 10, min: 1, max: 2 },
@@ -491,3 +600,48 @@ export const LOOT_TABLES = {
         { itemId: 'core_formation_pill', weight: 1, min: 1, max: 1 } // Extremely rare
     ]
 };
+
+Object.assign(ITEMS, {
+    voidbreaker_blade: {
+        id: 'voidbreaker_blade',
+        name: '斩虚古锋',
+        type: 'EQUIPMENT',
+        equipType: 'WEAPON',
+        rarity: 'LEGENDARY',
+        description: '历经终局大战后仍未崩毁的古锋，专克邪祟与裂界之物。',
+        stackable: false,
+        value: 18000,
+        statBonuses: { ATK: 120, CRIT: 12, SPD: 10 },
+        icon: '剑',
+    },
+    dawnfire_robe: {
+        id: 'dawnfire_robe',
+        name: '曙火天衣',
+        type: 'EQUIPMENT',
+        equipType: 'ARMOR',
+        rarity: 'LEGENDARY',
+        description: '曙光盟约汇聚各家火种缝成的护身法袍，能在大战余烬中稳住气机。',
+        stackable: false,
+        value: 16000,
+        statBonuses: { DEF: 85, MAX_HP: 420, MAX_MP: 180 },
+        icon: '袍',
+    },
+    mirror_of_returning_dawn: {
+        id: 'mirror_of_returning_dawn',
+        name: '回明宝鉴',
+        type: 'EQUIPMENT',
+        equipType: 'ACCESSORY',
+        rarity: 'LEGENDARY',
+        description: '以坠星残片与归墟边壳炼成的宝鉴，既可聚灵，也可映照敌势。',
+        stackable: false,
+        value: 20000,
+        statBonuses: { MAX_MP: 360, ATK: 28, DEF: 18, SPD: 12 },
+        icon: '镜',
+    },
+});
+
+LOOT_TABLES.HIGH_LEVEL.push(
+    { itemId: 'voidbreaker_blade', weight: 1, min: 1, max: 1 },
+    { itemId: 'dawnfire_robe', weight: 1, min: 1, max: 1 },
+    { itemId: 'mirror_of_returning_dawn', weight: 1, min: 1, max: 1 },
+);

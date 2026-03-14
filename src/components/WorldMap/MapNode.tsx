@@ -1,6 +1,7 @@
 import React from 'react';
-import type { Region, Location } from '../../types/worldTypes';
 import { motion } from 'framer-motion';
+import type { Region, Location } from '../../types/worldTypes';
+import { getMapVisual } from './mapVisuals';
 
 interface MapNodeProps {
     data: Region | Location;
@@ -10,80 +11,64 @@ interface MapNodeProps {
     onClick?: (id: string) => void;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-    'CITY': '#4ade80',      // Green
-    'SECT_HQ': '#f87171',   // Red
-    'SECRET_REALM': '#a78bfa', // Purple
-    'WILDERNESS': '#9ca3af', // Gray
-    'MINE': '#fbbf24',      // Amber
-    'HERB_GARDEN': '#34d399', // Emerald
-    'SPIRIT_VEIN': '#60a5fa', // Blue
-    'RUINS': '#fb923c',     // Orange
-    'MARKET': '#fcd34d',    // Yellow
-    'REGION_CENTER': '#e2e8f0', // White
-};
-
 export const MapNode: React.FC<MapNodeProps> = ({ data, isRegionCenter, isActive, isLocked, onClick }) => {
     const type = isRegionCenter ? 'REGION_CENTER' : (data as Location).type;
-    const color = TYPE_COLORS[type] || '#ffffff';
-
-    // Size based on importance
-    const size = isRegionCenter ? 24 : 12;
-    const glowSize = isActive ? size * 2.5 : size * 1.5;
+    const visual = getMapVisual(type);
+    const Icon = visual.icon;
+    const size = isRegionCenter ? 54 : 40;
+    const glowSize = isRegionCenter ? 96 : 72;
 
     return (
-        <div
-            className="relative cursor-pointer group flex items-center justify-center p-2"
-            onClick={() => onClick && onClick(data.id)}
+        <button
+            type="button"
+            className="group relative flex cursor-pointer items-center justify-center p-2"
+            onClick={() => onClick?.(data.id)}
         >
-            {/* Glow Effect */}
             <motion.div
-                className="absolute rounded-full opacity-30 select-none pointer-events-none"
+                className="pointer-events-none absolute rounded-full blur-xl"
                 style={{
-                    backgroundColor: color,
                     width: glowSize,
                     height: glowSize,
-                    left: '50%',
-                    top: '50%',
-                    x: '-50%',
-                    y: '-50%'
+                    background: `radial-gradient(circle, ${visual.glow} 0%, transparent 72%)`,
                 }}
-                animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.3, 0.5, 0.3]
-                }}
-                transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                }}
+                animate={{ scale: isActive ? [1, 1.15, 1] : [0.95, 1.08, 0.95], opacity: [0.45, 0.8, 0.45] }}
+                transition={{ duration: isActive ? 1.8 : 3, repeat: Infinity, ease: 'easeInOut' }}
             />
 
-            {/* Core Node */}
-            <div
-                className={`relative rounded-full border-2 transition-colors duration-300 ${isActive ? 'border-white' : 'border-transparent'}`}
+            <motion.div
+                className="relative flex items-center justify-center overflow-hidden rounded-2xl border shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-105"
                 style={{
                     width: size,
                     height: size,
-                    backgroundColor: isLocked ? '#333' : color,
-                    borderColor: isActive ? '#fff' : (isRegionCenter ? 'rgba(255,255,255,0.5)' : 'transparent')
+                    background: isLocked ? 'rgba(30, 41, 59, 0.85)' : `linear-gradient(135deg, ${visual.background}, rgba(15, 23, 42, 0.9))`,
+                    borderColor: isActive ? '#ffffff' : visual.border,
+                    boxShadow: isActive ? `0 0 0 1px ${visual.border}, 0 0 28px ${visual.glow}` : `0 12px 30px rgba(2, 6, 23, 0.35)`,
                 }}
+                animate={isActive ? { y: [0, -3, 0] } : { y: [0, -1.5, 0] }}
+                transition={{ duration: isActive ? 1.5 : 2.8, repeat: Infinity, ease: 'easeInOut' }}
             >
-                {/* Active Indicator Ring */}
-                {isActive && (
-                    <motion.div
-                        className="absolute -inset-1 border border-white rounded-full"
-                        animate={{ scale: [1, 1.5], opacity: [1, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                )}
-            </div>
+                <div
+                    className="absolute inset-0 opacity-80"
+                    style={{
+                        background: `radial-gradient(circle at top left, ${visual.border} 0%, transparent 48%)`,
+                    }}
+                />
+                <Icon className="relative z-10" size={isRegionCenter ? 22 : 16} color={isLocked ? '#64748b' : visual.color} strokeWidth={2.2} />
+            </motion.div>
 
-            {/* Tooltip on Hover */}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1 bg-gray-900/90 text-xs text-white rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-gray-700">
-                <div className="font-bold text-amber-500">{data.name}</div>
-                <div className="text-gray-400 scale-90 origin-top">{isRegionCenter ? (data as Region).terrain : (data as Location).type}</div>
+            {isActive && (
+                <motion.div
+                    className="pointer-events-none absolute inset-0 rounded-3xl border"
+                    style={{ borderColor: visual.border }}
+                    animate={{ scale: [1, 1.18], opacity: [0.8, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }}
+                />
+            )}
+
+            <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-3 w-max -translate-x-1/2 rounded-2xl border border-slate-700 bg-slate-950/90 px-3 py-2 text-left opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
+                <div className="text-sm font-semibold text-white">{data.name}</div>
+                <div className="mt-1 text-[11px] text-slate-300">{isRegionCenter ? (data as Region).terrain : visual.label}</div>
             </div>
-        </div>
+        </button>
     );
 };

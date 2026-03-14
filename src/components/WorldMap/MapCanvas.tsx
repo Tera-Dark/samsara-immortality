@@ -1,20 +1,22 @@
 import React from 'react';
-import type { WorldSnapshot, Coordinate } from '../../types/worldTypes';
+import type { WorldSnapshot, Coordinate, Region } from '../../types/worldTypes';
 import { motion } from 'framer-motion';
 
 interface MapCanvasProps {
     world: WorldSnapshot;
+    regions?: Region[];
 }
 
-export const MapCanvas: React.FC<MapCanvasProps> = ({ world }) => {
+export const MapCanvas: React.FC<MapCanvasProps> = ({ world, regions }) => {
     // 1. Collect all lines we want to draw
     const lines: Array<{ from: Coordinate; to: Coordinate; key: string; type: 'REGION' | 'LOCATION' }> = [];
+    const visibleRegions = regions ?? world.regions;
 
     // Map Region ID to Coordinate for easy lookup
     const regionCoords: Record<string, Coordinate> = {};
-    world.regions.forEach(r => regionCoords[r.id] = r.coord);
+    visibleRegions.forEach(r => regionCoords[r.id] = r.coord);
 
-    world.regions.forEach(region => {
+    visibleRegions.forEach(region => {
         // A. Region to Region (Adjacency)
         region.adjacentRegions.forEach(adjId => {
             const adjCoord = regionCoords[adjId];

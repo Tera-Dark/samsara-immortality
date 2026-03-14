@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { ITEMS } from '../../data/items';
+import { AchievementSystem } from '../../engine/systems/AchievementSystem';
 
 interface MarketPanelProps {
     onClose: () => void;
@@ -10,53 +11,74 @@ export const MarketPanel: React.FC<MarketPanelProps> = ({ onClose }) => {
     const { gameState, engine } = useGameStore();
     const { inventory } = gameState;
     const [mode, setMode] = useState<'BUY' | 'SELL'>('BUY');
+    const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    // Simple market inventory for now
-    // In future: dynamic based on location type/level
-    const SHOP_ITEMS = ['healing_pill_small', 'qi_gathering_pill', 'iron'];
+    const SHOP_ITEMS = [
+        'healing_pill_small',
+        'iron',
+        'bigu_pill',
+        ...(gameState.age >= 10 ? ['book_changchun', 'iron_sword'] : []),
+        ...(gameState.age >= 12 ? ['book_body_art'] : []),
+        ...(gameState.age >= 14 ? ['talisman_speed', 'cloth_armor'] : []),
+        ...((gameState.realm_idx || 0) >= 1 ? ['qi_gathering_pill', 'book_fire_art', 'book_sword_art', 'talisman_armor'] : []),
+        ...((gameState.realm_idx || 0) >= 2 ? ['jade_ring', 'book_phantom_step'] : []),
+    ];
 
     const handleBuy = (itemId: string, price: number) => {
         if (engine.getMoney() < price) {
-            alert("灵石不足！");
+            setActionMessage({ type: 'error', text: '灵石不足，无法购买。' });
             return;
         }
         engine.spendMoney(price);
         engine.addItem(itemId, 1);
+        AchievementSystem.checkAll(engine);
         useGameStore.setState({ gameState: { ...engine.state } });
+        setActionMessage({ type: 'success', text: `已购入 ${ITEMS[itemId]?.name || '物品'}。` });
     };
 
     const handleSell = (itemId: string, _count: number, price: number) => {
         if (engine.removeItem(itemId, 1)) {
             engine.earnMoney(price);
+            AchievementSystem.checkAll(engine);
             useGameStore.setState({ gameState: { ...engine.state } });
+            setActionMessage({ type: 'success', text: `已出售 ${ITEMS[itemId]?.name || '物品'}，获得 ${price} 灵石。` });
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center catch-events z-50">
-            <div className="w-[800px] h-[600px] bg-white border border-slate-200 rounded-lg flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center catch-events z-50" onClick={onClose}>
+            <div className="w-[800px] h-[600px] bg-white border border-slate-200 rounded-lg flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
-                <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6 bg-slate-800/50">
+                <div className="h-14 border-b border-slate-200 flex items-center justify-between px-6 bg-slate-50">
                     <div className="flex gap-4">
-                        <h2 className="text-xl font-bold text-blue-400 tracking-wider">坊 市</h2>
-                        <div className="flex bg-slate-800 rounded p-1">
+                        <h2 className="text-xl font-bold text-blue-700 tracking-wider">坊市</h2>
+                        <div className="flex bg-slate-100 rounded p-1 border border-slate-200">
                             <button
                                 onClick={() => setMode('BUY')}
-                                className={`px-4 py-1 rounded transition-all ${mode === 'BUY' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                className={`px-4 py-1 rounded transition-all ${mode === 'BUY' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 购买
                             </button>
                             <button
                                 onClick={() => setMode('SELL')}
-                                className={`px-4 py-1 rounded transition-all ${mode === 'SELL' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                className={`px-4 py-1 rounded transition-all ${mode === 'SELL' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
                             >
                                 出售
                             </button>
                         </div>
                     </div>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">✕</button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {actionMessage && (
+                        <div className={`rounded-lg border px-4 py-2 text-sm ${actionMessage.type === 'success'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border-red-200 bg-red-50 text-red-700'
+                        }`}>
+                            {actionMessage.text}
+                        </div>
+                    )}
                     {mode === 'BUY' ? (
                         <div className="space-y-2">
                             {SHOP_ITEMS.map(id => {
@@ -64,7 +86,7 @@ export const MarketPanel: React.FC<MarketPanelProps> = ({ onClose }) => {
                                 if (!item) return null;
                                 const price = item.value * 2; // Markup
                                 return (
-                                    <div key={id} className="flex justify-between items-center bg-slate-800 p-3 rounded">
+                                    <div key={id} className="flex justify-between items-center bg-slate-50 border border-slate-200 p-3 rounded">
                                         <div>
                                             <div className="font-bold text-slate-700">{item.name}</div>
                                             <div className="text-xs text-slate-500">{item.description}</div>
@@ -86,7 +108,7 @@ export const MarketPanel: React.FC<MarketPanelProps> = ({ onClose }) => {
                                 if (!item) return null;
                                 const sellPrice = Math.floor(item.value * 0.5); // Markdown
                                 return (
-                                    <div key={slot.itemId} className="flex justify-between items-center bg-slate-800 p-3 rounded">
+                                    <div key={slot.itemId} className="flex justify-between items-center bg-slate-50 border border-slate-200 p-3 rounded">
                                         <div>
                                             <div className="font-bold text-slate-700">{item.name} x{slot.count}</div>
                                             <div className="text-xs text-slate-500">{item.description}</div>
@@ -104,7 +126,7 @@ export const MarketPanel: React.FC<MarketPanelProps> = ({ onClose }) => {
                     )}
                 </div>
 
-                <div className="p-4 border-t border-slate-200 bg-slate-800/50 flex justify-between items-center">
+                <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
                     <div className="text-amber-400 font-bold">
                         拥有灵石: {engine.getMoney()}
                     </div>

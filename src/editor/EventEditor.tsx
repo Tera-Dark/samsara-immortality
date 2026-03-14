@@ -1,10 +1,10 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { ScrollText } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
+import type { Condition, Effect, EventChoice, GameEvent } from '../types';
+import { ChoiceEditor } from './ChoiceEditor';
 import { ConditionBuilder } from './ConditionBuilder';
 import { EffectEditor } from './EffectEditor';
-import { ChoiceEditor } from './ChoiceEditor';
-import type { GameEvent, Condition, Effect, EventChoice } from '../types';
-import { ScrollText } from 'lucide-react';
 
 type EventCategory = 'ALL' | 'CORE' | 'INFANT' | 'MORTAL' | 'QI' | 'CHILDHOOD';
 
@@ -35,9 +35,8 @@ const CATEGORY_COLORS: Record<EventCategory, string> = {
 };
 
 function createBlankEvent(): GameEvent {
-    const id = `EVT_NEW_${Date.now().toString(36).toUpperCase()}`;
     return {
-        id,
+        id: `EVT_NEW_${Date.now().toString(36).toUpperCase()}`,
         title: '新事件',
         content: '在此输入事件描述...',
         conditions: [],
@@ -46,7 +45,7 @@ function createBlankEvent(): GameEvent {
 }
 
 export const EventEditor: React.FC = () => {
-    const { engine } = useGameStore();
+    const { engine, upsertRuntimeEvent, deleteRuntimeEvent } = useGameStore();
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [category, setCategory] = useState<EventCategory>('ALL');
@@ -57,77 +56,63 @@ export const EventEditor: React.FC = () => {
     const [importText, setImportText] = useState('');
     const [showImport, setShowImport] = useState(false);
 
-    // 直接引用 engine.events（可变），而非通过 hook 解构
-    const getEvents = () => engine.events;
-    const events = getEvents();
+    const events = engine.events;
 
     const filteredEvents = useMemo(() => {
-        return events.filter(e => {
-            const matchSearch = searchTerm === '' ||
-                e.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (e.title && e.title.includes(searchTerm)) ||
-                (e.content && e.content.includes(searchTerm));
-            const matchCategory = category === 'ALL' || categorizeEvent(e.id) === category;
+        return events.filter(event => {
+            const matchSearch = searchTerm === ''
+                || event.id.toLowerCase().includes(searchTerm.toLowerCase())
+                || (event.title && event.title.includes(searchTerm))
+                || (event.content && event.content.includes(searchTerm));
+            const matchCategory = category === 'ALL' || categorizeEvent(event.id) === category;
             return matchSearch && matchCategory;
         });
     }, [events, searchTerm, category]);
 
-    // Stats
     const categoryCounts = useMemo(() => {
         const counts: Record<EventCategory, number> = { ALL: events.length, CORE: 0, INFANT: 0, MORTAL: 0, QI: 0, CHILDHOOD: 0 };
-        events.forEach(e => { counts[categorizeEvent(e.id)]++; });
+        events.forEach(event => {
+            counts[categorizeEvent(event.id)]++;
+        });
         return counts;
     }, [events]);
 
-    useEffect(() => {
-        if (selectedEventId) {
-            const ev = events.find(e => e.id === selectedEventId);
-            if (ev) {
-                setEditedEvent(JSON.parse(JSON.stringify(ev)));
-            } else {
-                setEditedEvent(null);
-            }
-        } else {
+    const loadEventIntoEditor = (eventId: string | null) => {
+        setSelectedEventId(eventId);
+        if (!eventId) {
             setEditedEvent(null);
-        }
-    }, [selectedEventId, events]);
-
-    // Sync JSON text when switching to JSON mode
-    useEffect(() => {
-        if (jsonMode && editedEvent) {
-            setJsonText(JSON.stringify(editedEvent, null, 2));
+            setJsonMode(false);
+            setJsonText('');
             setJsonError('');
+            return;
         }
-    }, [jsonMode, editedEvent]);
+
+        const source = events.find(event => event.id === eventId);
+        const cloned = source ? JSON.parse(JSON.stringify(source)) as GameEvent : null;
+        setEditedEvent(cloned);
+        setJsonMode(false);
+        setJsonText('');
+        setJsonError('');
+    };
 
     const handleSave = () => {
         if (!editedEvent) return;
-        // eslint-disable-next-line react-hooks/immutability
-        const evts = engine.events;
-        const idx = evts.findIndex(e => e.id === editedEvent.id);
-        if (idx >= 0) {
-            evts[idx] = editedEvent;
-        } else {
-            evts.push(editedEvent);
-        }
-        alert('✓ 事件已保存到运行时引擎（刷新页面后重置）');
+        upsertRuntimeEvent(editedEvent);
+        alert('已保存到运行时事件池，刷新页面后会重置。');
     };
 
     const handleNew = () => {
         const newEvent = createBlankEvent();
-        engine.events.push(newEvent);
-        setSelectedEventId(newEvent.id);
+        upsertRuntimeEvent(newEvent);
         setCategory('ALL');
+        loadEventIntoEditor(newEvent.id);
     };
 
     const handleDelete = () => {
         if (!editedEvent) return;
         if (!confirm(`确定删除事件 "${editedEvent.title || editedEvent.id}"？`)) return;
-        const evts = engine.events;
-        const idx = evts.findIndex(e => e.id === editedEvent.id);
-        if (idx >= 0) evts.splice(idx, 1);
-        setSelectedEventId(null);
-        setEditedEvent(null);
+        deleteRuntimeEvent(editedEvent.id);
+        loadEventIntoEditor(null);
     };
 
     const handleJsonApply = () => {
@@ -140,8 +125,8 @@ export const EventEditor: React.FC = () => {
             setEditedEvent(parsed);
             setJsonError('');
             setJsonMode(false);
-        } catch (e) {
-            setJsonError(`JSON 解析错误: ${(e as Error).message}`);
+        } catch (error) {
+            setJsonError(`JSON 解析错误: ${(error as Error).message}`);
         }
     };
 
@@ -150,10 +135,10 @@ export const EventEditor: React.FC = () => {
         const json = JSON.stringify(editedEvent, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${editedEvent.id}.json`;
-        a.click();
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${editedEvent.id}.json`;
+        link.click();
         URL.revokeObjectURL(url);
     };
 
@@ -162,51 +147,43 @@ export const EventEditor: React.FC = () => {
         const json = JSON.stringify(target, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `events_${category.toLowerCase()}_export.json`;
-        a.click();
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `events_${category.toLowerCase()}_export.json`;
+        link.click();
         URL.revokeObjectURL(url);
     };
 
     const handleImport = () => {
         try {
             const parsed = JSON.parse(importText);
-            const arr: GameEvent[] = Array.isArray(parsed) ? parsed : [parsed];
-            // eslint-disable-next-line react-hooks/immutability
-            const evts = engine.events;
+            const importedEvents: GameEvent[] = Array.isArray(parsed) ? parsed : [parsed];
             let added = 0;
-            for (const ev of arr) {
-                if (!ev.id || !ev.content) continue;
-                const idx = evts.findIndex(e => e.id === ev.id);
-                if (idx >= 0) {
-                    evts[idx] = ev;
-                } else {
-                    evts.push(ev);
-                }
+            for (const event of importedEvents) {
+                if (!event.id || !event.content) continue;
+                upsertRuntimeEvent(event);
                 added++;
             }
             setShowImport(false);
             setImportText('');
-            alert(`✓ 成功导入 ${added} 个事件`);
-        } catch (e) {
-            alert(`JSON 解析失败: ${(e as Error).message}`);
+            alert(`成功导入 ${added} 个事件`);
+        } catch (error) {
+            alert(`JSON 解析失败: ${(error as Error).message}`);
         }
     };
 
-    const handleConditionChange = (newConditions: Condition[]) => {
+    const handleConditionChange = (conditions: Condition[]) => {
         if (!editedEvent) return;
-        setEditedEvent({ ...editedEvent, conditions: newConditions });
+        setEditedEvent({ ...editedEvent, conditions });
     };
 
-    const handleChoicesChange = (newChoices: EventChoice[]) => {
+    const handleChoicesChange = (choices: EventChoice[]) => {
         if (!editedEvent) return;
-        const updated = { ...editedEvent, choices: newChoices };
-        // If choices added, remove direct effect
-        if (newChoices.length > 0 && updated.effect) {
-            delete updated.effect;
+        const nextEvent = { ...editedEvent, choices };
+        if (choices.length > 0 && nextEvent.effect) {
+            delete nextEvent.effect;
         }
-        setEditedEvent(updated);
+        setEditedEvent(nextEvent);
     };
 
     const handleDirectEffectChange = (effect: Effect) => {
@@ -214,17 +191,24 @@ export const EventEditor: React.FC = () => {
         setEditedEvent({ ...editedEvent, effect });
     };
 
+    const toggleJsonMode = () => {
+        const nextMode = !jsonMode;
+        setJsonMode(nextMode);
+        if (nextMode && editedEvent) {
+            setJsonText(JSON.stringify(editedEvent, null, 2));
+            setJsonError('');
+        }
+    };
+
     return (
         <div className="flex h-full gap-4">
-            {/* Left Panel - Event List */}
             <div className="w-80 flex flex-col gap-2 h-full shrink-0">
-                {/* Toolbar */}
                 <div className="flex gap-2">
                     <button
                         onClick={handleNew}
                         className="flex-1 text-xs px-2 py-1.5 bg-emerald-700 text-white rounded hover:bg-emerald-600 transition-colors"
                     >
-                        ＋ 新建事件
+                        + 新建事件
                     </button>
                     <button
                         onClick={() => setShowImport(!showImport)}
@@ -240,14 +224,13 @@ export const EventEditor: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Import Panel */}
                 {showImport && (
                     <div className="bg-slate-800 border border-blue-500/30 rounded p-2 space-y-2">
                         <textarea
                             className="w-full h-32 bg-slate-900 border border-slate-600 rounded p-2 text-xs text-slate-200 font-mono outline-none focus:border-blue-500 resize-none"
                             value={importText}
                             onChange={e => setImportText(e.target.value)}
-                            placeholder='粘贴 JSON 事件数据（对象或数组）...'
+                            placeholder="粘贴 JSON 事件数据（对象或数组）..."
                         />
                         <div className="flex gap-2">
                             <button
@@ -257,7 +240,10 @@ export const EventEditor: React.FC = () => {
                                 确认导入
                             </button>
                             <button
-                                onClick={() => { setShowImport(false); setImportText(''); }}
+                                onClick={() => {
+                                    setShowImport(false);
+                                    setImportText('');
+                                }}
                                 className="text-xs px-2 py-1 bg-slate-700 text-white rounded hover:bg-slate-600"
                             >
                                 取消
@@ -266,7 +252,6 @@ export const EventEditor: React.FC = () => {
                     </div>
                 )}
 
-                {/* Search */}
                 <input
                     type="text"
                     placeholder="搜索事件 ID / 标题 / 内容..."
@@ -275,52 +260,50 @@ export const EventEditor: React.FC = () => {
                     onChange={e => setSearchTerm(e.target.value)}
                 />
 
-                {/* Category Tabs */}
                 <div className="flex flex-wrap gap-1">
-                    {(Object.keys(CATEGORY_LABELS) as EventCategory[]).map(cat => (
+                    {(Object.keys(CATEGORY_LABELS) as EventCategory[]).map(item => (
                         <button
-                            key={cat}
-                            onClick={() => setCategory(cat)}
-                            className={`text-xs px-2 py-1 rounded transition-colors ${category === cat
+                            key={item}
+                            onClick={() => setCategory(item)}
+                            className={`text-xs px-2 py-1 rounded transition-colors ${category === item
                                 ? 'bg-slate-600 text-white'
                                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                 }`}
                         >
-                            {CATEGORY_LABELS[cat]} ({categoryCounts[cat]})
+                            {CATEGORY_LABELS[item]} ({categoryCounts[item]})
                         </button>
                     ))}
                 </div>
 
-                {/* Event List */}
                 <div className="flex-1 overflow-y-auto bg-slate-800/50 border border-slate-700 rounded-lg p-1.5 space-y-0.5 custom-scrollbar">
-                    {filteredEvents.map(e => {
-                        const cat = categorizeEvent(e.id);
+                    {filteredEvents.map(event => {
+                        const eventCategory = categorizeEvent(event.id);
                         return (
                             <button
-                                key={e.id}
-                                onClick={() => setSelectedEventId(e.id)}
-                                className={`w-full text-left p-2 rounded text-sm hover:bg-slate-700/50 transition-colors ${selectedEventId === e.id
+                                key={event.id}
+                                onClick={() => loadEventIntoEditor(event.id)}
+                                className={`w-full text-left p-2 rounded text-sm hover:bg-slate-700/50 transition-colors ${selectedEventId === event.id
                                     ? 'bg-emerald-900/40 border border-emerald-500/40'
                                     : 'border border-transparent'
                                     }`}
                             >
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-[10px] font-mono ${CATEGORY_COLORS[cat]}`}>
-                                        {CATEGORY_LABELS[cat]}
+                                    <span className={`text-[10px] font-mono ${CATEGORY_COLORS[eventCategory]}`}>
+                                        {CATEGORY_LABELS[eventCategory]}
                                     </span>
-                                    {e.choices && e.choices.length > 0 && (
+                                    {event.choices && event.choices.length > 0 && (
                                         <span className="text-[10px] bg-amber-700/30 text-amber-300 px-1 rounded">
-                                            {e.choices.length}选项
+                                            {event.choices.length} 选项
                                         </span>
                                     )}
-                                    {e.branches && e.branches.length > 0 && (
+                                    {event.branches && event.branches.length > 0 && (
                                         <span className="text-[10px] bg-red-700/30 text-red-300 px-1 rounded">
                                             分支
                                         </span>
                                     )}
                                 </div>
-                                <div className="font-bold text-slate-200 text-xs mt-0.5">{e.title || '无标题'}</div>
-                                <div className="text-[10px] text-slate-500 font-mono truncate">{e.id}</div>
+                                <div className="font-bold text-slate-200 text-xs mt-0.5">{event.title || '无标题'}</div>
+                                <div className="text-[10px] text-slate-500 font-mono truncate">{event.id}</div>
                             </button>
                         );
                     })}
@@ -330,21 +313,17 @@ export const EventEditor: React.FC = () => {
                 </div>
             </div>
 
-            {/* Right Panel - Detail Editor */}
             <div className="flex-1 bg-slate-800/30 border border-slate-700 rounded-lg h-full overflow-hidden flex flex-col">
                 {editedEvent ? (
                     <>
-                        {/* Header */}
                         <div className="flex justify-between items-center px-4 py-3 bg-slate-800/60 border-b border-slate-700">
                             <div className="flex items-center gap-3">
-                                <h3 className="text-lg font-serif font-bold text-emerald-400">
-                                    {editedEvent.title || '无标题'}
-                                </h3>
+                                <h3 className="text-lg font-serif font-bold text-emerald-400">{editedEvent.title || '无标题'}</h3>
                                 <span className="text-xs font-mono text-slate-500">{editedEvent.id}</span>
                             </div>
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => setJsonMode(!jsonMode)}
+                                    onClick={toggleJsonMode}
                                     className={`px-3 py-1 rounded text-xs transition-colors ${jsonMode
                                         ? 'bg-purple-600 text-white'
                                         : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -373,10 +352,8 @@ export const EventEditor: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Body */}
                         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-5">
                             {jsonMode ? (
-                                /* JSON Editor */
                                 <div className="space-y-2">
                                     <textarea
                                         className="w-full h-[60vh] bg-slate-900 border border-slate-600 rounded p-3 text-xs text-slate-200 font-mono outline-none focus:border-purple-500 resize-none"
@@ -394,9 +371,7 @@ export const EventEditor: React.FC = () => {
                                     </button>
                                 </div>
                             ) : (
-                                /* Visual Editor */
                                 <>
-                                    {/* Basic */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-mono text-slate-500 mb-1">ID</label>
@@ -418,7 +393,7 @@ export const EventEditor: React.FC = () => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-mono text-slate-500 mb-1">触发概率 (0~1, 空=必触发)</label>
+                                            <label className="block text-xs font-mono text-slate-500 mb-1">触发概率 (0~1，空表示必触发)</label>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -427,13 +402,13 @@ export const EventEditor: React.FC = () => {
                                                 className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
                                                 value={editedEvent.probability ?? ''}
                                                 onChange={e => {
-                                                    const val = e.target.value;
-                                                    if (val === '') {
-                                                        const next = { ...editedEvent };
-                                                        delete next.probability;
-                                                        setEditedEvent(next);
+                                                    const value = e.target.value;
+                                                    if (value === '') {
+                                                        const nextEvent = { ...editedEvent };
+                                                        delete nextEvent.probability;
+                                                        setEditedEvent(nextEvent);
                                                     } else {
-                                                        setEditedEvent({ ...editedEvent, probability: Number(val) });
+                                                        setEditedEvent({ ...editedEvent, probability: Number(value) });
                                                     }
                                                 }}
                                             />
@@ -444,13 +419,13 @@ export const EventEditor: React.FC = () => {
                                                 className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
                                                 value={editedEvent.eventType || ''}
                                                 onChange={e => {
-                                                    const val = e.target.value as GameEvent['eventType'];
-                                                    if (val) {
-                                                        setEditedEvent({ ...editedEvent, eventType: val });
+                                                    const value = e.target.value as GameEvent['eventType'];
+                                                    if (value) {
+                                                        setEditedEvent({ ...editedEvent, eventType: value });
                                                     } else {
-                                                        const next = { ...editedEvent };
-                                                        delete next.eventType;
-                                                        setEditedEvent(next);
+                                                        const nextEvent = { ...editedEvent };
+                                                        delete nextEvent.eventType;
+                                                        setEditedEvent(nextEvent);
                                                     }
                                                 }}
                                             >
@@ -463,7 +438,6 @@ export const EventEditor: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Content */}
                                     <div>
                                         <label className="block text-xs font-mono text-slate-500 mb-1">事件描述</label>
                                         <textarea
@@ -473,7 +447,6 @@ export const EventEditor: React.FC = () => {
                                         />
                                     </div>
 
-                                    {/* Conditions */}
                                     <div>
                                         <label className="block text-xs font-mono text-slate-500 mb-1">触发条件</label>
                                         <ConditionBuilder
@@ -482,7 +455,6 @@ export const EventEditor: React.FC = () => {
                                         />
                                     </div>
 
-                                    {/* Choices OR Direct Effect */}
                                     <div className="border-t border-slate-700 pt-4">
                                         <div className="flex items-center gap-4 mb-3">
                                             <span className="text-sm font-bold text-slate-300">事件结果</span>
@@ -493,7 +465,7 @@ export const EventEditor: React.FC = () => {
                                                             setEditedEvent({
                                                                 ...editedEvent,
                                                                 choices: [{ text: '选项一', effect: {} }],
-                                                                effect: undefined
+                                                                effect: undefined,
                                                             });
                                                         }
                                                     }}
@@ -509,7 +481,7 @@ export const EventEditor: React.FC = () => {
                                                         setEditedEvent({
                                                             ...editedEvent,
                                                             choices: undefined,
-                                                            effect: editedEvent.effect || {}
+                                                            effect: editedEvent.effect || {},
                                                         });
                                                     }}
                                                     className={`px-2 py-1 rounded ${(!editedEvent.choices || editedEvent.choices.length === 0)
@@ -523,16 +495,9 @@ export const EventEditor: React.FC = () => {
                                         </div>
 
                                         {editedEvent.choices && editedEvent.choices.length > 0 ? (
-                                            <ChoiceEditor
-                                                choices={editedEvent.choices}
-                                                onChange={handleChoicesChange}
-                                            />
+                                            <ChoiceEditor choices={editedEvent.choices} onChange={handleChoicesChange} />
                                         ) : (
-                                            <EffectEditor
-                                                effect={editedEvent.effect || {}}
-                                                onChange={handleDirectEffectChange}
-                                                label="直接效果"
-                                            />
+                                            <EffectEditor effect={editedEvent.effect || {}} onChange={handleDirectEffectChange} label="直接效果" />
                                         )}
                                     </div>
                                 </>
@@ -543,7 +508,7 @@ export const EventEditor: React.FC = () => {
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-600">
                         <ScrollText className="w-10 h-10 text-slate-600 mb-4" />
                         <div className="text-lg italic">选择一个事件进行编辑</div>
-                        <div className="text-xs mt-2">或点击「新建事件」创建</div>
+                        <div className="text-xs mt-2">或点击“新建事件”创建</div>
                     </div>
                 )}
             </div>

@@ -6,7 +6,6 @@ import { determineFate } from '../modules/xianxia/data/fateData';
 import { WorldGenerator } from './WorldGenerator';
 import type { Mission } from '../types/missionTypes';
 
-// Systems
 import { TimeSystem } from './systems/TimeSystem';
 import { EventSystem } from './systems/EventSystem';
 import { CultivationSystem } from './systems/CultivationSystem';
@@ -16,19 +15,17 @@ import { InventorySystem } from './systems/InventorySystem';
 import { EquipmentSystem } from './systems/EquipmentSystem';
 import { SkillSystem } from './systems/SkillSystem';
 import { TravelSystem } from './systems/TravelSystem';
-
-// Event Pipeline
+import { AlchemySystem } from './systems/AlchemySystem';
+import { AbodeSystem } from './systems/AbodeSystem';
+import { SectSystem as SectSys } from './systems/SectSystem';
 import { EventPool } from './EventPool';
 
 export class GameEngine {
     state: PlayerState;
     moduleConfig: ModuleConfig;
     talentsDB: Talent[];
-
-    /** 事件池管理器 — 管理内置事件与 AI 注入事件 */
     readonly eventPool: EventPool;
 
-    /** 事件列表访问器（向后兼容，从 EventPool 获取） */
     get events(): GameEvent[] {
         return this.eventPool.getPool();
     }
@@ -37,13 +34,12 @@ export class GameEngine {
         this.moduleConfig = config;
         this.talentsDB = talents;
 
-        // Initialize EventPool with registered stat IDs from config
         const registeredStats = config.stats.map(s => s.id);
         const registeredResources = config.resources?.map(r => r.id) || [];
         this.eventPool = new EventPool({
             registeredStats,
             registeredResources,
-            allowUnknownStats: true, // Lenient for now — existing events use keys like EXP, MNY, DAO etc.
+            allowUnknownStats: true,
         });
         this.eventPool.registerCoreEvents(events);
 
@@ -53,11 +49,16 @@ export class GameEngine {
     hotReload(config: ModuleConfig, events: GameEvent[]) {
         this.moduleConfig = config;
         this.eventPool.registerCoreEvents(events);
-        // Basic hot reload support for editor
+    }
+
+    updateModuleConfig(patch: Partial<Pick<ModuleConfig, 'stats' | 'resources'>>) {
+        this.moduleConfig = {
+            ...this.moduleConfig,
+            ...patch,
+        };
     }
 
     getInitialState(): PlayerState {
-        // Initialize attributes from Module Config
         const attributes: Record<string, number> = {};
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.moduleConfig.stats.forEach((s: any) => {
@@ -68,7 +69,7 @@ export class GameEngine {
             MAX_HP: attributes.HP || 100,
             MAX_MP: attributes.MP || 0,
             ...BATTLE_STATS_DEFAULTS,
-            MOVE_SPEED: 20 // Default fallback
+            MOVE_SPEED: 20,
         };
 
         return {
@@ -79,15 +80,15 @@ export class GameEngine {
             realm_idx: 0,
             sub_realm_idx: 0,
             exp: 0,
-            maxExp: 100, // Starts at 100 maxExp for sensing Qi
-            spiritRootType: 'FATE_SPIRIT_ROOT_FIVE', // 默认五灵根保底
-            cultivationSpeedMultiplier: 1.0, // 默认100%修炼速度
+            maxExp: 100,
+            spiritRootType: 'FATE_SPIRIT_ROOT_FIVE',
+            cultivationSpeedMultiplier: 1.0,
             gender: Math.random() > 0.5 ? 'Male' : 'Female',
             race: 'HUMAN',
-            attributes: attributes,
+            attributes,
             battleStats: initialBattleStats,
             tutorialCompleted: false,
-
+            deathKarmaClaimed: false,
             talents: [],
             flags: [],
             relationships: [],
@@ -97,48 +98,37 @@ export class GameEngine {
                 level: INITIAL_STATE.HOME_LEVEL,
                 name: INITIAL_STATE.HOME_NAME,
                 modules: [],
-                resources: {} // Use generic resources map
+                resources: {},
             },
-            professions: {}, // Generic professions map
+            professions: {},
             inventory: [],
             equipment: {
                 weapon: null,
                 armor: null,
-                accessory: null
+                accessory: null,
             },
             learnedSkills: [],
             equippedSkills: [null, null, null, null],
             triggeredEvents: [],
             history: [],
             alive: true,
-            background: 'FARMER', // Default
-
-            // ... (keep existing)
-            // World Context
+            background: 'FARMER',
             world: new WorldGenerator({ seed: 0 }, { silent: true }).generate(),
-
-            // [NEW] Personality & Acquired Traits
             personality: {
-                // Core Values (-100 to 100)
-                'JUSTICE': 0, // Pos: Justice, Neg: Evil
-                'COURAGE': 0, // Pos: Brave, Neg: Timid
-                'AMBITION': 0 // Pos: Ambitious, Neg: Content
+                JUSTICE: 0,
+                COURAGE: 0,
+                AMBITION: 0,
             },
             acquiredTraits: [],
-
-            // [NEW] 世界定位
-            location: '',  // 由世界生成后设定
-            sect: null,    // 初始为散修
-
-            // [NEW] 命格与气运
+            location: '',
+            sect: null,
+            sectState: null,
             fate: [],
             fortuneBuffs: [],
-
-            // [NEW] Mission System Initialization
             missions: {
                 active: [],
-                completed: []
-            }
+                completed: [],
+            },
         };
     }
 
@@ -150,13 +140,22 @@ export class GameEngine {
         return CultivationSystem.getLifespan(this);
     }
 
-    // --- Standardization V2 ---
-
     triggerTalents(trigger: import('../types').TriggerType) {
         TalentSystem.triggerTalents(this, trigger);
     }
 
-    advanceTime(monthsPassed: number, context?: { action?: string }, daysPassed: number = 0): { event: import('../types').GameEvent | null; message?: string, combat?: { enemy: Partial<import('../types/combat').CombatEntity>, type: import('../types/combat').CombatState['type'] } } {
+    advanceTime(
+        monthsPassed: number,
+        context?: { action?: string },
+        daysPassed: number = 0,
+    ): {
+        event: import('../types').GameEvent | null;
+        message?: string;
+        combat?: {
+            enemy: Partial<import('../types/combat').CombatEntity>;
+            type: import('../types/combat').CombatState['type'];
+        };
+    } {
         return TimeSystem.advanceTime(this, monthsPassed, context, daysPassed);
     }
 
@@ -168,43 +167,33 @@ export class GameEngine {
         this.state.attributes = { ...this.state.attributes, ...initialAttributes };
         this.state.talents = selectedTalents;
 
-        // Apply talent initial effects (Legacy)
         selectedTalents.forEach(t => {
             if (t.effect) {
                 this.applyEffect(t.effect);
-                // [FIX] Handle history explicitly
                 if (t.effect.history) {
                     this.state.history.push(t.effect.history);
                 }
             }
         });
 
-        // Apply PASSIVE modifiers
         this.triggerTalents('PASSIVE');
-
-        // Note: initLife() should be called manually after talents/stats are injected
     }
 
     reset() {
         this.state = this.getInitialState();
-        this.eventPool.resetSession(); // 清除注入的 AI 事件
+        this.eventPool.resetSession();
     }
 
     initLife() {
-        // Determine Background based on LUCK
         const luck = this.state.attributes.LUCK || 0;
-        // ... (Background logic same as before)
         if (luck < GAME_RULES.BACKGROUND_THRESHOLDS.FARMER) this.state.background = 'FARMER';
         else if (luck < GAME_RULES.BACKGROUND_THRESHOLDS.RICH) this.state.background = 'RICH';
         else this.state.background = 'CULTIVATOR';
 
-        // Add Background Flag
         this.state.flags.push(`BG_${this.state.background}`);
 
-        // Generate Parents based on Background
         const father = generateNPC('父亲', 'M');
         const mother = generateNPC('母亲', 'F');
-
         const bgKey = this.state.background as keyof typeof NPC_DESCRIPTIONS.FATHER;
 
         father.desc = NPC_DESCRIPTIONS.FATHER[bgKey];
@@ -217,54 +206,61 @@ export class GameEngine {
 
         this.state.relationships = [father, mother];
 
-        // Generate Player Name (Inherit Surname)
         const surname = father.name.charAt(0);
         const givenName = generateName(this.state.gender === 'Male' ? 'M' : 'F').slice(1);
         this.state.name = surname + givenName;
 
-        // Recalc Battle Stats for Player
         this.recalculateStats();
 
-        // Initial Log
-        this.state.history.push(TEXT_CONSTANTS.BIRTH_LOG + `父亲是${father.name}，母亲是${mother.name}。`);
+        let birthEffect: Effect;
+        if (bgKey === 'FARMER') birthEffect = { STR: 2, MOOD: 5 };
+        else if (bgKey === 'RICH') birthEffect = { MONEY: 50, CHR: 5 };
+        else birthEffect = { MONEY: 10, REP: 5 };
+        this.applyEffect(birthEffect);
 
-        // Context-aware Naming
-        const namer = NPC_DESCRIPTIONS.NAMER[bgKey] || TEXT_CONSTANTS.MYSTERIOUS_PERSON;
-        this.state.history.push(`${namer}为你取名为：${this.state.name}。`);
-
-        // Trigger specific Birth Event based on Background
-        let birthEventId = '';
-        if (this.state.background === 'FARMER') birthEventId = 'EVT_BIRTH_FARMER';
-        else if (this.state.background === 'RICH') birthEventId = 'EVT_BIRTH_RICH';
-        else birthEventId = 'EVT_BIRTH_001';
-
-        const birthEvent = this.events.find(e => e.id === birthEventId);
-        if (birthEvent) {
-            this.processEvent(birthEvent);
-        }
-
-        // [NEW] 决定先天命格 + 灵根修炼速度
         const talentIds = this.state.talents.map(t => t.id);
         const fateResult = determineFate(this.state.attributes, this.state.background, talentIds);
         this.state.fate = fateResult.fates;
         this.state.spiritRootType = fateResult.spiritRootType;
         this.state.cultivationSpeedMultiplier = fateResult.cultivationSpeedMultiplier;
 
-        // [NEW] 生成新世界 (随机种子, 随机名称)
         const worldGen = new WorldGenerator({
             seed: Math.floor(Math.random() * 9999999),
         });
         this.state.world = worldGen.generate();
 
-        // [NEW] 玩家出生地 (选择一个推荐境界最低的安全区域)
-        const safeRegions = this.state.world.regions.sort((a, b) => a.dangerLevel - b.dangerLevel);
+        const safeRegions = [...this.state.world.regions].sort((a, b) => a.dangerLevel - b.dangerLevel);
         const startRegion = safeRegions[0];
         this.state.location = startRegion.id;
 
-        this.state.history.push(`你出生在${startRegion.name}，这里${startRegion.description}。`);
+        this.state.history.push(TEXT_CONSTANTS.BIRTH_LOG);
+        this.state.history.push(`你出生在${startRegion.name}。${startRegion.description}`);
+
+        const familyLineByBackground = {
+            FARMER: `家里靠几亩薄田和一间旧屋过活，父亲${father.name}与母亲${mother.name}都只是凡俗之人，却把日子熬得很稳。`,
+            RICH: `你自幼生在殷实之家，父亲${father.name}往来商旅，母亲${mother.name}善理家事，门庭里常有外客出入。`,
+            CULTIVATOR: `你出身带着修行底蕴的家门，父亲${father.name}与母亲${mother.name}都知道这世上不止柴米油盐，还有宗门、灵气与大道。`,
+        } as const;
+        this.state.history.push(familyLineByBackground[bgKey]);
+
+        const namer = NPC_DESCRIPTIONS.NAMER[bgKey] || TEXT_CONSTANTS.MYSTERIOUS_PERSON;
+        this.state.history.push(`${namer}为你取名“${this.state.name}”。从这一刻起，你真正被这个世界记住了。`);
+
+        const firstFeelingByBackground = {
+            FARMER: '夜里风从窗缝里吹进来，灶火、泥土与人声混在一起，你对人间最早的印象，是清苦中的温热。',
+            RICH: '廊下灯火长明，院外车马偶有停驻，你对这个世界最早的感觉，是热闹背后总还藏着更大的去处。',
+            CULTIVATOR: '长辈交谈时偶尔提起宗门、劫数与机缘，那些你尚听不懂的词句，已先一步在心底埋下回响。',
+        } as const;
+        this.state.history.push(firstFeelingByBackground[bgKey]);
     }
 
-    checkBreakthrough(): { message?: string, combat?: { enemy: Partial<import('../types/combat').CombatEntity>, type: import('../types/combat').CombatState['type'] } } | undefined {
+    checkBreakthrough(): {
+        message?: string;
+        combat?: {
+            enemy: Partial<import('../types/combat').CombatEntity>;
+            type: import('../types/combat').CombatState['type'];
+        };
+    } | undefined {
         return CultivationSystem.checkBreakthrough(this);
     }
 
@@ -274,7 +270,6 @@ export class GameEngine {
 
     updateWorldState() {
         this.state.world.worldMonth++;
-        // TODO: Implement Era progression logic here
     }
 
     checkCondition(cond: string, context?: { action?: string }): boolean {
@@ -293,7 +288,6 @@ export class GameEngine {
         EventSystem.makeChoice(this, choice);
     }
 
-    /** 统一时间戳格式：[X岁Y月] */
     getTimeStr(): string {
         const months = this.state.months % 12;
         return months > 0 ? `[${this.state.age}岁${months}月]` : `[${this.state.age}岁]`;
@@ -303,7 +297,6 @@ export class GameEngine {
         return EventSystem.applyEffect(this, effect);
     }
 
-    // --- 气运Buff管理 ---
     tickFortuneBuffs(monthsPassed: number) {
         TalentSystem.tickFortuneBuffs(this, monthsPassed);
     }
@@ -312,41 +305,56 @@ export class GameEngine {
         TalentSystem.addFortuneBuff(this, buff);
     }
 
-    // ═══════════════════════════════════════════════════
-    // Delegated Systems — Thin wrappers for backward compatibility
-    // ═══════════════════════════════════════════════════
-
-    // --- Travel System ---
     travelTo(targetId: string) { return TravelSystem.travelTo(this, targetId); }
     gather() { return TravelSystem.gather(this); }
     rest() { return TravelSystem.rest(this); }
+    performLocationAction(action: import('./systems/TravelSystem').LocationActionType) { return TravelSystem.performLocationAction(this, action); }
     getLocationEntity(id: string) { return TravelSystem.getLocationEntity(this, id); }
     joinSect(sectId: string) { return TravelSystem.joinSect(this, sectId); }
     calculateTravelDays(targetId: string) { return TravelSystem.calculateTravelDays(this, targetId); }
 
-    // --- Inventory System ---
     addItem(itemId: string, count: number) { InventorySystem.addItem(this, itemId, count); }
     removeItem(itemId: string, count: number) { return InventorySystem.removeItem(this, itemId, count); }
-    useItem(itemId: string) { return InventorySystem.useItem(this, itemId); }
+    consumeItem(itemId: string) { return InventorySystem.consumeItem(this, itemId); }
 
-    // --- Equipment System ---
     equipItem(itemId: string) { return EquipmentSystem.equipItem(this, itemId); }
     unequipItem(slot: 'weapon' | 'armor' | 'accessory') { return EquipmentSystem.unequipItem(this, slot); }
 
-    // --- Skill System ---
     learnSkill(skillId: string) { return SkillSystem.learnSkill(this, skillId); }
     equipSkill(skillId: string, slotIndex: number) { return SkillSystem.equipSkill(this, skillId, slotIndex); }
     unequipSkill(slotIndex: number) { return SkillSystem.unequipSkill(this, slotIndex); }
 
-    // --- Money Helpers ---
     addSpiritStones(amount: number) { InventorySystem.addSpiritStones(this, amount); }
     earnMoney(amount: number) { InventorySystem.earnMoney(this, amount); }
     spendMoney(amount: number) { return InventorySystem.spendMoney(this, amount); }
     getMoney() { return InventorySystem.getMoney(this); }
 
-    // --- Mission System ---
     checkMissions() { MissionSystem.checkMissions(this); }
     completeMission(missionState: import('../types/missionTypes').GenericMissionState, def: Mission) { MissionSystem.completeMission(this, missionState, def); }
     startMission(missionId: string) { MissionSystem.startMission(this, missionId); }
-}
 
+    getAlchemyRecipes() { return AlchemySystem.getAvailableRecipes(this); }
+    canRefineAlchemy(recipeId: string) { return AlchemySystem.canRefine(this, recipeId); }
+    refineAlchemy(recipeId: string) { return AlchemySystem.refine(this, recipeId); }
+    getAlchemySuccessRate(recipe: import('../data/alchemy').AlchemyRecipe) { return AlchemySystem.calculateSuccessRate(this, recipe); }
+
+    getAbodeState() { return AbodeSystem.getAbodeState(this); }
+    upgradeAbode() { return AbodeSystem.upgradeAbode(this); }
+    plantHerb(plotIndex: number, seedId: string) { return AbodeSystem.plantHerb(this, plotIndex, seedId); }
+    harvestHerb(plotIndex: number) { return AbodeSystem.harvestHerb(this, plotIndex); }
+    clearPlot(plotIndex: number) { return AbodeSystem.clearPlot(this, plotIndex); }
+    getAvailableSeeds() { return AbodeSystem.getAvailableSeeds(this); }
+    getAbodeCultivationBonus() { return AbodeSystem.getCultivationBonus(this); }
+
+    getAllSects() { return SectSys.getAllSects(); }
+    getSectState() { return SectSys.getSectState(this); }
+    canJoinSect(sectId: string) { return SectSys.canJoin(this, sectId); }
+    joinSectNew(sectId: string) { return SectSys.joinSect(this, sectId); }
+    leaveSect() { return SectSys.leaveSect(this); }
+    doSectMission(missionId: string) { return SectSys.doMission(this, missionId); }
+    exchangeSectItem(itemId: string) { return SectSys.exchangeItem(this, itemId); }
+    getSectRankTitle() { return SectSys.getCurrentRankTitle(this); }
+
+    upsertRuntimeEvent(event: GameEvent) { this.eventPool.upsertRuntimeEvent(event); }
+    removeRuntimeEvent(eventId: string) { return this.eventPool.removeEventById(eventId); }
+}

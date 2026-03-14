@@ -16,7 +16,7 @@ export const SKILLS: Record<string, CombatSkill> = {
     'fireball': {
         id: 'fireball',
         name: '火弹术',
-        description: '将灵力凝聚为炽热的火球攻击敌人，威力一般但消耗较少。',
+        description: '将灵力凝聚为炽热火球攻击敌人，消耗低，成型快。',
         type: 'ATTACK',
         costType: 'MP',
         costAmount: 10,
@@ -29,7 +29,7 @@ export const SKILLS: Record<string, CombatSkill> = {
     'wind_blade': {
         id: 'wind_blade',
         name: '风刃术',
-        description: '释放无形的风刃切割敌人，速度极快。',
+        description: '释放无形风刃切割敌人，出手极快。',
         type: 'ATTACK',
         costType: 'MP',
         costAmount: 15,
@@ -50,10 +50,23 @@ export const SKILLS: Record<string, CombatSkill> = {
         target: 'SELF',
         healMultiplier: 1.5,
     },
+    'crashing_fist': {
+        id: 'crashing_fist',
+        name: '裂石拳',
+        description: '以筋骨劲力直贯一线，重在稳定爆发，凡俗武者亦可驾驭。',
+        type: 'ATTACK',
+        costType: 'NONE',
+        costAmount: 0,
+        cooldown: 1,
+        target: 'ENEMY',
+        damageType: 'PHYSICAL',
+        powerMultiplier: 1.7,
+        flatDamage: 8,
+    },
     'lightning_strike': {
         id: 'lightning_strike',
         name: '引雷诀',
-        description: '沟通天地引下落雷，威力巨大且无视部分防御。',
+        description: '沟通天地引落雷霆，威力巨大且无视部分防御。',
         type: 'ATTACK',
         costType: 'MP',
         costAmount: 50,
@@ -75,10 +88,20 @@ export const SKILLS: Record<string, CombatSkill> = {
         damageType: 'PHYSICAL',
         powerMultiplier: 2.5,
     },
+    'phantom_step': {
+        id: 'phantom_step',
+        name: '幻影步',
+        description: '步法飘忽，借身法卸力避锋，转瞬间为自身凝出护身余势。',
+        type: 'DEFENSE',
+        costType: 'MP',
+        costAmount: 18,
+        cooldown: 2,
+        target: 'SELF',
+    },
     'qi_shield': {
         id: 'qi_shield',
         name: '灵力护盾',
-        description: '消耗大量灵力在体表形成坚固的护盾（提供防御增益）。',
+        description: '消耗大量灵力在体表形成坚固护盾，提供短时防护。',
         type: 'BUFF',
         costType: 'MP',
         costAmount: 40,
@@ -93,18 +116,17 @@ export const SKILLS: Record<string, CombatSkill> = {
                 type: 'BUFF',
                 effect: {
                     statMultiplier: {
-                        DEF: 1.5
-                    }
-                }
-            }
-        ]
+                        DEF: 1.5,
+                    },
+                },
+            },
+        ],
     },
 
-    // --- New Skills ---
     'blood_slash': {
         id: 'blood_slash',
-        name: '泣血刀',
-        description: '燃烧自身少量气血，爆发出惊人的物理杀伤力。',
+        name: '泣血刃',
+        description: '燃烧自身少量气血，爆发出惊人的物理伤害。',
         type: 'ATTACK',
         costType: 'HP',
         costAmount: 20,
@@ -129,9 +151,9 @@ export const SKILLS: Record<string, CombatSkill> = {
     },
     'spiritual_drain': {
         id: 'spiritual_drain',
-        name: '吸星大衍诀',
-        description: '邪修秘术，攻击敌人同时按照一定比例偷取灵力（转化自伤害）。',
-        type: 'ATTACK', // Note: Needs special life-leech handler in CombatSystem, but keeping as ATTACK for now to rely on base logic
+        name: '吸星大法',
+        description: '邪修秘术，攻击敌人同时窃取灵机，胜在诡异。',
+        type: 'ATTACK',
         costType: 'NONE',
         costAmount: 0,
         cooldown: 4,
@@ -143,8 +165,8 @@ export const SKILLS: Record<string, CombatSkill> = {
     'five_elements_shield': {
         id: 'five_elements_shield',
         name: '五行罡气',
-        description: '消耗大量灵力撑起一个强悍无匹的护盾。',
-        type: 'DEFENSE', // Handled by DEFENSE type now
+        description: '消耗大量灵力撑起五行护体罡气。',
+        type: 'DEFENSE',
         costType: 'MP',
         costAmount: 60,
         cooldown: 4,
@@ -153,7 +175,7 @@ export const SKILLS: Record<string, CombatSkill> = {
     'heavenly_judgement': {
         id: 'heavenly_judgement',
         name: '天道审判',
-        description: '引动冥冥中的天道之力制裁敌人，造成无视防御的真实伤害。',
+        description: '引动冥冥中的天道之力裁决敌人，造成真实伤害。',
         type: 'ATTACK',
         costType: 'MP',
         costAmount: 100,
@@ -162,5 +184,5 @@ export const SKILLS: Record<string, CombatSkill> = {
         damageType: 'TRUE',
         powerMultiplier: 5.0,
         flatDamage: 200,
-    }
+    },
 };

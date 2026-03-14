@@ -1,4 +1,4 @@
-﻿import type { FC } from 'react';
+import type { FC } from 'react';
 import type { NPC } from '../types';
 import { useUIStore } from '../store/uiStore';
 
@@ -8,53 +8,68 @@ interface RelationshipPanelProps {
 }
 
 export const RelationshipPanel: FC<RelationshipPanelProps> = ({ relations = [], compact }) => {
-    const inspectNPC = useUIStore(s => s.inspectNPC);
+    const inspectNPC = useUIStore((s) => s.inspectNPC);
 
     return (
-        <div className={compact ? "space-y-1.5" : "space-y-4"}>
+        <div className={compact ? 'space-y-2' : 'space-y-4'}>
             {!compact && (
-                <h3 className="text-xs font-mono text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-2 mb-4">人际关系</h3>
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h3 className="text-xs uppercase tracking-[0.28em] text-slate-500">人际关系</h3>
+                    <span className="text-[11px] text-slate-400">{relations.length} 位</span>
+                </div>
             )}
+
             {relations.length === 0 ? (
-                <div className="text-slate-600 text-xs italic">举目无亲...</div>
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-sm text-slate-400">
+                    暂无可追溯关系
+                </div>
             ) : (
-                relations.map(npc => (
-                    <div
+                relations.map((npc) => (
+                    <button
                         key={npc.id}
                         onClick={() => inspectNPC(npc)}
-                        className={`cursor-pointer group relative ${compact
-                            ? 'p-1.5 bg-slate-50 border border-slate-200 rounded'
-                            : 'p-3 bg-white/80 border border-slate-200 rounded-sm'
-                            } hover:border-emerald-500/40 hover:bg-emerald-900/5 transition-all duration-200`}
+                        className={`group w-full cursor-pointer text-left transition-all hover:-translate-y-0.5 ${
+                            compact
+                                ? 'rounded-2xl border border-slate-200 bg-white px-3 py-2.5 hover:border-emerald-300 hover:bg-emerald-50'
+                                : 'rounded-2xl border border-slate-200 bg-white px-4 py-3 hover:border-emerald-300 hover:bg-emerald-50'
+                        }`}
                     >
-                        <div className="flex items-center gap-2">
-                            <div className={`${compact ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs'} rounded-full border flex items-center justify-center text-slate-600 ${npc.gender === 'F' ? 'bg-rose-900/20 border-rose-900/50' : 'bg-slate-800 border-slate-200'} group-hover:border-emerald-500/40 transition-colors`}>
+                        <div className="flex items-center gap-3">
+                            <div className={`flex items-center justify-center rounded-2xl border text-sm font-bold ${
+                                compact ? 'h-10 w-10' : 'h-12 w-12'
+                            } ${
+                                npc.gender === 'F'
+                                    ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                    : 'border-sky-200 bg-sky-50 text-sky-700'
+                            }`}>
                                 {npc.name[0]}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-center">
-                                    <span className={`${compact ? 'text-xs' : 'text-sm'} text-slate-700 font-bold truncate group-hover:text-emerald-300 transition-colors`}>{npc.name}</span>
-                                    <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} text-emerald-500 border border-emerald-900/50 px-1 rounded shrink-0`}>{npc.relation}</span>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="truncate text-sm font-semibold text-slate-800 group-hover:text-emerald-700">{npc.name}</div>
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-500">
+                                        {npc.relation}
+                                    </span>
                                 </div>
-                                {!compact && (
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[10px] text-amber-500">{npc.realm || '凡人'}</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-slate-500">{npc.age}/{npc.lifespan}岁</span>
-                                            <span className={`text-[10px] ${npc.intimacy > 60 ? 'text-rose-400' : 'text-slate-600'}`}>好感 {npc.intimacy}</span>
-                                        </div>
+                                <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
+                                    <span>{npc.realm || '凡人'}</span>
+                                    <span>·</span>
+                                    <span>{npc.age}/{npc.lifespan}岁</span>
+                                </div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                        <div
+                                            className={`h-full rounded-full ${npc.intimacy >= 60 ? 'bg-rose-500' : npc.intimacy >= 30 ? 'bg-emerald-500' : 'bg-slate-400'}`}
+                                            style={{ width: `${Math.min(100, Math.max(6, npc.intimacy))}%` }}
+                                        />
                                     </div>
-                                )}
-                                {compact && (
-                                    <div className="flex items-center gap-2 text-[9px]">
-                                        <span className="text-slate-500">{npc.age}岁</span>
-                                        <span className={npc.intimacy > 60 ? 'text-rose-400' : 'text-slate-600'}>好感{npc.intimacy}</span>
-                                        <span className="text-slate-700 ml-auto text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">点击查看 →</span>
-                                    </div>
-                                )}
+                                    <span className={`text-[11px] font-mono ${npc.intimacy >= 60 ? 'text-rose-600' : 'text-slate-500'}`}>
+                                        好感 {npc.intimacy}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </button>
                 ))
             )}
         </div>

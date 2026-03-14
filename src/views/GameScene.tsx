@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import { RelationshipPanel } from '../components/RelationshipPanel';
@@ -13,19 +13,26 @@ import { SkillsPanel } from '../components/Skills/SkillsPanel';
 import { LocationActionPanel } from '../components/Location/LocationActionPanel';
 import { CombatPanel } from '../components/CombatPanel';
 import { MissionLogModal } from '../components/MissionLogModal';
-import { MAIN_QUESTS } from '../data/missions';
 import { getGuidance } from '../utils/guideSystem';
+import { getPrimaryMission } from '../utils/missionUtils';
 import { TopBar } from '../components/Layout/TopBar';
-import { BookOpen, Info, ChevronRight } from 'lucide-react';
+import { BookOpen, Info, ChevronRight, FlaskConical, Mountain, Shield, Trophy } from 'lucide-react';
 import { GameOverOverlay } from '../components/GameOverOverlay';
+import { AlchemyPanel } from '../components/Alchemy/AlchemyPanel';
+import { AbodePanel } from '../components/Abode/AbodePanel';
+import { SectPanel } from '../components/Sect/SectPanel';
+import { AchievementPanel } from '../components/Achievement/AchievementPanel';
+import { NarrativeOverlay } from '../components/NarrativeOverlay';
+import { VictoryOverlay } from '../components/VictoryOverlay';
 
 import type { ActionType } from '../engine/systems/ActionSystem';
 
 // ... existing imports
 
 export const GameScene = () => {
-    const { gameState, engine, currentEvent, currentCombat, performAction, makeChoice } = useGameStore();
+    const { gameState, currentEvent, currentCombat, breakthroughMsg, narrativeEvent, clearNarrative, performAction, makeChoice } = useGameStore();
     const {
+        toggleCharacterSheet,
         showInventory, toggleInventory,
         showSkills, toggleSkills,
         showMap, toggleMap,
@@ -38,7 +45,7 @@ export const GameScene = () => {
     } = useUIStore();
 
     // Local layout state
-    const [showInfoPanel, setShowInfoPanel] = useState(false);
+    const [showInfoPanel, setShowInfoPanel] = useState(true);
 
     // [NEW] Action Simplification State
     const lastActionRef = useRef<ActionType | null>(null);
@@ -47,9 +54,19 @@ export const GameScene = () => {
     const [isSecluding, setIsSecluding] = useState(false);
     const [secludeTarget, setSecludeTarget] = useState(0);
     const [secludeProgress, setSecludeProgress] = useState(0);
+    const [showAlchemy, setShowAlchemy] = useState(false);
+    const [showAbode, setShowAbode] = useState(false);
+    const [showSect, setShowSect] = useState(false);
+    const [showAchievement, setShowAchievement] = useState(false);
+    const [dismissedVictoryOverlay, setDismissedVictoryOverlay] = useState(false);
 
     // Derived Stats
     const ageYears = gameState.age;
+    const primaryMission = getPrimaryMission(gameState);
+    const isTrueEndingCleared = gameState.flags.includes('STORY:VOID_LORD_SLAIN');
+    const shouldShowVictoryOverlay = isTrueEndingCleared
+        && !gameState.flags.includes('ENDING:VOID_LORD_EPILOGUE_READ')
+        && !dismissedVictoryOverlay;
 
     // Guidance
     const guidance = getGuidance(gameState);
@@ -68,7 +85,7 @@ export const GameScene = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.code === 'Space' && !e.repeat) {
                 // Ignore if any modal/overlay is open
-                if (showInventory || showMap || showSettings || showMissions || currentEvent || currentCombat || engine.checkBreakthrough() || isSecluding || showSecludeModal) return;
+                if (showInventory || showMap || showSettings || showMissions || currentEvent || currentCombat || breakthroughMsg || isSecluding || showSecludeModal) return;
 
                 if (lastActionRef.current) {
                     e.preventDefault();
@@ -78,18 +95,23 @@ export const GameScene = () => {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [showInventory, showMap, showSettings, showMissions, currentEvent, currentCombat, engine, isSecluding, showSecludeModal, handleAction]);
+    }, [showInventory, showMap, showSettings, showMissions, currentEvent, currentCombat, breakthroughMsg, isSecluding, showSecludeModal, handleAction]);
 
     // [NEW] Secluded Cultivation Loop
     useEffect(() => {
         if (!isSecluding) return;
 
         // Stop if interrupted by event, breakthrough, or finished target
-        if (currentEvent || engine.checkBreakthrough() || secludeProgress >= secludeTarget || !gameState.alive) {
+        if (currentEvent || breakthroughMsg || secludeProgress >= secludeTarget || !gameState.alive) {
             setTimeout(() => {
                 setIsSecluding(false);
                 if (secludeProgress >= secludeTarget && secludeTarget > 0) {
-                    useGameStore.getState().engine.state.history.push(`【闭关结束】本次闭关了 ${secludeTarget} 个月。`);
+                    useGameStore.setState((state) => {
+                        state.engine.state.history.push(`【闭关结束】本次闭关了 ${secludeTarget} 个月。`);
+                        return {
+                            gameState: { ...state.engine.state },
+                        };
+                    });
                 }
             }, 0);
             return;
@@ -101,7 +123,7 @@ export const GameScene = () => {
         }, 150); // fast loop tick
 
         return () => clearTimeout(timer);
-    }, [isSecluding, secludeProgress, secludeTarget, currentEvent, engine, performAction, gameState.alive]);
+    }, [isSecluding, secludeProgress, secludeTarget, currentEvent, breakthroughMsg, performAction, gameState.alive]);
 
     const startSeclusion = (months: number) => {
         setSecludeTarget(months);
@@ -116,13 +138,14 @@ export const GameScene = () => {
 
             {/* 死亡结算界面 (Game Over Overlay) */}
             {!gameState.alive && <GameOverOverlay />}
+            {shouldShowVictoryOverlay && <VictoryOverlay onClose={() => setDismissedVictoryOverlay(true)} />}
 
             {/* 战斗界面 (Combat Overlay) */}
             <CombatPanel />
 
             {/* 突破界面 (Breakthrough Overlay) */}
             {
-                useGameStore(s => s.breakthroughMsg) && (
+                breakthroughMsg && (
                     <div className="absolute inset-0 z-50">
                         <BreakthroughOverlay />
                     </div>
@@ -176,6 +199,34 @@ export const GameScene = () => {
                 )
             }
 
+            {/* 炼丹术 (Alchemy) */}
+            {
+                showAlchemy && (
+                    <AlchemyPanel onClose={() => setShowAlchemy(false)} />
+                )
+            }
+
+            {/* 洞府管理 (Abode) */}
+            {
+                showAbode && (
+                    <AbodePanel onClose={() => setShowAbode(false)} />
+                )
+            }
+
+            {/* 宗门势力 (Sect) */}
+            {
+                showSect && (
+                    <SectPanel onClose={() => setShowSect(false)} />
+                )
+            }
+
+            {/* 成就界面 (Achievement) */}
+            {
+                showAchievement && (
+                    <AchievementPanel onClose={() => setShowAchievement(false)} />
+                )
+            }
+
             {/* 游戏指南 (Tutorial/Help) */}
             {/* TODO: Add GuideModal component */}
 
@@ -187,7 +238,7 @@ export const GameScene = () => {
 
 
                 {/* ─── 左侧栏：属性 + 人际 ─── */}
-                <div className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col lg:overflow-hidden order-2 lg:order-1">
+                <div className="w-full lg:w-[232px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col lg:overflow-hidden order-2 lg:order-1">
 
                     {/* 属性区块 */}
                     <div className="p-3 lg:block hidden h-full flex flex-col">
@@ -196,9 +247,31 @@ export const GameScene = () => {
                 </div>
 
                 {/* Mobile Bottom Bar for Stats/Relations (Alternative to sidebar) */}
-                <div className="lg:hidden shrink-0 border-t border-slate-200 p-2 flex gap-2 bg-slate-50 order-3">
-                    <div className="flex-1 p-2 text-center text-xs text-slate-500 border border-slate-200 rounded">
-                        属性 / 人际 (暂略 - 需适配)
+                <div className="lg:hidden shrink-0 border-t border-slate-200 bg-slate-50/95 p-2 order-3">
+                    <div className="grid grid-cols-3 gap-2">
+                        <button
+                            onClick={() => toggleCharacterSheet(true)}
+                            className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50"
+                        >
+                            <div className="text-[10px] tracking-[0.16em] text-slate-400">角色</div>
+                            <div className="mt-1 truncate text-xs font-semibold text-slate-700">{gameState.name}</div>
+                        </button>
+                        <button
+                            onClick={() => setShowInfoPanel((value) => !value)}
+                            className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-sky-300 hover:bg-sky-50"
+                        >
+                            <div className="text-[10px] tracking-[0.16em] text-slate-400">概览</div>
+                            <div className="mt-1 text-xs font-semibold text-slate-700">{showInfoPanel ? '收起角色信息' : '展开角色信息'}</div>
+                        </button>
+                        <button
+                            onClick={() => toggleMissions(true)}
+                            className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-amber-300 hover:bg-amber-50"
+                        >
+                            <div className="text-[10px] tracking-[0.16em] text-slate-400">任务</div>
+                            <div className="mt-1 truncate text-xs font-semibold text-slate-700">
+                                {primaryMission?.definition.title ?? guidance.text}
+                            </div>
+                        </button>
                     </div>
                 </div>
 
@@ -243,8 +316,8 @@ export const GameScene = () => {
                         </button>
 
                         {/* 展开内容 */}
-                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showInfoPanel ? 'max-h-[280px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                            <div className="max-h-[260px] overflow-y-auto overflow-x-hidden custom-scrollbar px-4 pb-3">
+                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showInfoPanel ? 'max-h-[240px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className="max-h-[220px] overflow-y-auto overflow-x-hidden custom-scrollbar px-4 pb-3">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
 
                                     {/* 列1：正邪 + 特质 */}
@@ -314,7 +387,8 @@ export const GameScene = () => {
                         </div>
                     </div>
                     {/* 行动区 */}
-                    <div className="shrink-0 p-5 border-b border-slate-200">
+                    <div className="shrink-0 border-b border-slate-200">
+                        <div className="custom-scrollbar max-h-[52vh] overflow-y-auto p-5">
                         <div className="flex items-center gap-2 mb-4 justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70"></span>
@@ -326,11 +400,7 @@ export const GameScene = () => {
                                 className="md:hidden text-xs text-indigo-600 cursor-pointer hover:text-indigo-800"
                             >
                                 {gameState.missions && gameState.missions.active.length > 0 ? (
-                                    (() => {
-                                        const mId = gameState.missions.active[0].id;
-                                        const mTitle = MAIN_QUESTS.find(q => q.id === mId)?.title || '任务中';
-                                        return `任务: ${mTitle}`;
-                                    })()
+                                    `任务: ${primaryMission?.definition.title ?? '进行中'}`
                                 ) : (
                                     `目标: ${guidance.text}`
                                 )}
@@ -396,7 +466,7 @@ export const GameScene = () => {
                             </div>
                         ) : (
                             /* ─── 行动卡组 ─── */
-                            <div className="flex flex-col gap-3 relative">
+                            <div className="flex flex-col gap-4 relative">
                                 {/* 核心行动 */}
                                 <div>
                                     {ageYears < 3 ? (
@@ -415,9 +485,9 @@ export const GameScene = () => {
                                     ) : (
                                         <>
                                             {/* 3岁+：教育与修炼 */}
-                                            <div className="grid grid-cols-3 xl:grid-cols-5 gap-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                                                 {/* 习文 */}
-                                                <button onClick={() => handleAction('STUDY_LIT')} className="flex items-center gap-2 p-2 bg-sky-50 border border-sky-200 rounded hover:bg-sky-100 hover:border-sky-300 transition-all group relative">
+                                                <button onClick={() => handleAction('STUDY_LIT')} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-100 hover:shadow-md">
                                                     <div className="w-7 h-7 rounded shrink-0 bg-sky-100 border border-sky-300 flex items-center justify-center text-sky-700 font-serif group-hover:scale-110 transition-transform text-xs">文</div>
                                                     <div className="text-left flex-1 min-w-0">
                                                         <div className="text-xs font-bold text-slate-700 group-hover:text-sky-700 transition-colors">习文</div>
@@ -427,7 +497,7 @@ export const GameScene = () => {
                                                 </button>
 
                                                 {/* 劳作 */}
-                                                <button onClick={() => handleAction('WORK')} className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded hover:bg-slate-100 hover:border-slate-300 transition-all group relative">
+                                                <button onClick={() => handleAction('WORK')} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-4 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-100 hover:shadow-md">
                                                     <div className="w-7 h-7 rounded shrink-0 bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-600 font-serif group-hover:scale-110 transition-transform text-xs">劳</div>
                                                     <div className="text-left flex-1 min-w-0">
                                                         <div className="text-xs font-bold text-slate-700 group-hover:text-slate-800 transition-colors">劳作</div>
@@ -437,7 +507,7 @@ export const GameScene = () => {
                                                 </button>
 
                                                 {/* 历练 */}
-                                                <button onClick={() => handleAction('EXPLORE')} className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 hover:border-amber-300 transition-all group relative">
+                                                <button onClick={() => handleAction('EXPLORE')} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-100 hover:shadow-md">
                                                     <div className="w-7 h-7 rounded shrink-0 bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 font-serif group-hover:scale-110 transition-transform text-xs">历</div>
                                                     <div className="text-left flex-1 min-w-0">
                                                         <div className="text-xs font-bold text-slate-700 group-hover:text-amber-700 transition-colors">历练</div>
@@ -449,7 +519,7 @@ export const GameScene = () => {
                                                 {/* 修炼与闭关 (仅拥有功法时显示) */}
                                                 {gameState.flags.includes('HAS_CULTIVATION_METHOD') && (
                                                     <>
-                                                        <button onClick={() => handleAction('CULTIVATE')} className="flex items-center gap-2 p-2 bg-purple-50 border border-purple-200 rounded hover:bg-purple-100 hover:border-purple-300 transition-all group relative">
+                                                        <button onClick={() => handleAction('CULTIVATE')} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-purple-200 bg-purple-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-purple-300 hover:bg-purple-100 hover:shadow-md">
                                                             <div className="w-7 h-7 rounded shrink-0 bg-purple-100 border border-purple-300 flex items-center justify-center text-purple-700 font-serif group-hover:scale-110 transition-transform text-xs">修</div>
                                                             <div className="text-left flex-1 min-w-0">
                                                                 <div className="text-xs font-bold text-slate-700 group-hover:text-purple-700 transition-colors">吐纳</div>
@@ -458,7 +528,7 @@ export const GameScene = () => {
                                                             {lastActionUI === 'CULTIVATE' && <div className="absolute right-2 top-2 text-[8px] bg-slate-100 text-slate-500 px-1 py-0.5 rounded">空格</div>}
                                                         </button>
 
-                                                        <button onClick={() => setShowSecludeModal(true)} disabled={isSecluding} className="flex items-center gap-2 p-2 bg-fuchsia-50 border border-fuchsia-200 rounded hover:bg-fuchsia-100 hover:border-fuchsia-300 transition-all group relative overflow-hidden disabled:opacity-50">
+                                                        <button onClick={() => isSecluding ? setIsSecluding(false) : setShowSecludeModal(true)} className="group relative flex min-h-[92px] items-start gap-3 overflow-hidden rounded-2xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-fuchsia-300 hover:bg-fuchsia-100 hover:shadow-md">
                                                             {isSecluding && (
                                                                 <div className="absolute inset-0 bg-fuchsia-200/50 animate-pulse"></div>
                                                             )}
@@ -473,6 +543,56 @@ export const GameScene = () => {
                                                         </button>
                                                     </>
                                                 )}
+
+                                                {/* 炼丹术 (炼气后可用) */}
+                                                {(gameState.realm_idx || 0) >= 1 && (
+                                                    <button onClick={() => setShowAlchemy(true)} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-100 hover:shadow-md">
+                                                        <div className="w-7 h-7 rounded shrink-0 bg-orange-100 border border-orange-300 flex items-center justify-center text-orange-700 group-hover:scale-110 transition-transform">
+                                                            <FlaskConical className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="text-left flex-1 min-w-0">
+                                                            <div className="text-xs font-bold text-slate-700 group-hover:text-orange-700 transition-colors">炼丹</div>
+                                                            <div className="text-[9px] text-slate-500 truncate">炼制丹药辅助修行</div>
+                                                        </div>
+                                                    </button>
+                                                )}
+
+                                                {/* 洞府管理 (炼气后可用) */}
+                                                {(gameState.realm_idx || 0) >= 1 && (
+                                                    <button onClick={() => setShowAbode(true)} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-100 hover:shadow-md">
+                                                        <div className="w-7 h-7 rounded shrink-0 bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+                                                            <Mountain className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="text-left flex-1 min-w-0">
+                                                            <div className="text-xs font-bold text-slate-700 group-hover:text-emerald-700 transition-colors">洞府</div>
+                                                            <div className="text-[9px] text-slate-500 truncate">灵田种植与洞府升级</div>
+                                                        </div>
+                                                    </button>
+                                                )}
+
+                                                {/* 宗门势力 (炼气后可用) */}
+                                                {(gameState.realm_idx || 0) >= 1 && (
+                                                    <button onClick={() => setShowSect(true)} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow-md">
+                                                        <div className="w-7 h-7 rounded shrink-0 bg-blue-100 border border-blue-300 flex items-center justify-center text-blue-700 group-hover:scale-110 transition-transform">
+                                                            <Shield className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="text-left flex-1 min-w-0">
+                                                            <div className="text-xs font-bold text-slate-700 group-hover:text-blue-700 transition-colors">宗门</div>
+                                                            <div className="text-[9px] text-slate-500 truncate">加入门派与执行任务</div>
+                                                        </div>
+                                                    </button>
+                                                )}
+
+                                                {/* 成就 (始终可用) */}
+                                                <button onClick={() => setShowAchievement(true)} className="group relative flex min-h-[92px] items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/85 p-4 transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-100 hover:shadow-md">
+                                                    <div className="w-7 h-7 rounded shrink-0 bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform">
+                                                        <Trophy className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="text-left flex-1 min-w-0">
+                                                        <div className="text-xs font-bold text-slate-700 group-hover:text-amber-700 transition-colors">成就</div>
+                                                        <div className="text-[9px] text-slate-500 truncate">里程碑与解锁奖励</div>
+                                                    </div>
+                                                </button>
                                             </div>
                                         </>
                                     )}
@@ -486,16 +606,17 @@ export const GameScene = () => {
                                 )}
                             </div>
                         )}
+                        </div>
                     </div>
 
                     {/* ─── 系统日志 ─── */}
-                    <div className="flex-1 flex flex-col min-h-0 p-5 pt-3">
+                    <div className="flex min-h-[280px] flex-1 flex-col p-5 pt-3">
                         <div className="flex items-center gap-2 mb-3 shrink-0">
                             <span className="text-xs font-mono text-slate-500 tracking-[0.3em]">系统日志</span>
                             <div className="flex-1 h-px bg-slate-200"></div>
                             <span className="text-xs font-mono text-emerald-500/60">●</span>
                         </div>
-                        <div className="flex-1 min-h-0 bg-slate-50 border border-slate-200 rounded-lg overflow-y-auto custom-scrollbar relative">
+                        <div className="flex-1 min-h-0 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden relative">
                             {isSecluding && (
                                 <div className="absolute top-2 right-2 bg-fuchsia-100 text-fuchsia-700 text-xs px-2 py-1 rounded border border-fuchsia-300 shadow-md animate-pulse z-10">
                                     闭关中 (第 {Math.floor(secludeProgress / 12)} 年 {secludeProgress % 12} 个月)
@@ -510,41 +631,45 @@ export const GameScene = () => {
             </div>
 
             {/* 闭关设置 Modal */}
-            {showSecludeModal && (
-                <div className="absolute inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white border border-slate-200 rounded-lg p-6 w-full max-w-sm shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-400 to-purple-400"></div>
-                        <h2 className="text-xl font-bold text-slate-800 mb-2 font-serif text-center flex items-center justify-center gap-2">
-                            <div className="h-px w-8 bg-gradient-to-r from-transparent to-fuchsia-300"></div>
-                            洞府闭关
-                            <div className="h-px w-8 bg-gradient-to-l from-transparent to-fuchsia-300"></div>
-                        </h2>
-                        <p className="text-slate-500 text-sm mb-6 text-center leading-relaxed">
-                            闭关期间时间将快速流逝，直到达到设定期限或遭遇突发机缘。<br />
-                            <span className="text-amber-600 text-xs">闭关时需保证寿元等基本消耗。</span>
-                        </p>
+        {showSecludeModal && (
+            <div className="absolute inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-white border border-slate-200 rounded-lg p-6 w-full max-w-sm shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fuchsia-400 to-purple-400"></div>
+                    <h2 className="text-xl font-bold text-slate-800 mb-2 font-serif text-center flex items-center justify-center gap-2">
+                        <div className="h-px w-8 bg-gradient-to-r from-transparent to-fuchsia-300"></div>
+                        洞府闭关
+                        <div className="h-px w-8 bg-gradient-to-l from-transparent to-fuchsia-300"></div>
+                    </h2>
+                    <p className="text-slate-500 text-sm mb-6 text-center leading-relaxed">
+                        闭关期间时间将快速流逝，直到达到设定期限或遭遇突发机缘。<br />
+                        <span className="text-amber-600 text-xs">闭关时需保证寿元等基本消耗。</span>
+                    </p>
 
-                        <div className="space-y-3">
-                            <button onClick={() => startSeclusion(6)} className="w-full py-3 bg-slate-50 hover:bg-fuchsia-50 border border-slate-200 hover:border-fuchsia-300 rounded text-slate-700 transition-colors flex justify-between px-6">
-                                <span>小周天</span>
-                                <span className="text-slate-400">半年 (6个月)</span>
-                            </button>
-                            <button onClick={() => startSeclusion(12)} className="w-full py-3 bg-slate-50 hover:bg-fuchsia-50 border border-slate-200 hover:border-fuchsia-300 rounded text-slate-700 transition-colors flex justify-between px-6">
-                                <span>大周天</span>
-                                <span className="text-slate-400">一年 (12个月)</span>
-                            </button>
-                            <button onClick={() => startSeclusion(60)} className="w-full py-3 bg-slate-50 hover:bg-fuchsia-50 border border-slate-200 hover:border-fuchsia-300 rounded text-slate-700 transition-colors flex justify-between px-6">
-                                <span>生死关</span>
-                                <span className="text-slate-400">五年 (60个月)</span>
-                            </button>
-                        </div>
+                    <div className="space-y-3">
+                        <button onClick={() => startSeclusion(6)} className="w-full py-3 bg-slate-50 hover:bg-fuchsia-50 border border-slate-200 hover:border-fuchsia-300 rounded text-slate-700 transition-colors flex justify-between px-6">
+                            <span>小周天</span>
+                            <span className="text-slate-400">半年 (6个月)</span>
+                        </button>
+                        <button onClick={() => startSeclusion(12)} className="w-full py-3 bg-slate-50 hover:bg-fuchsia-50 border border-slate-200 hover:border-fuchsia-300 rounded text-slate-700 transition-colors flex justify-between px-6">
+                            <span>大周天</span>
+                            <span className="text-slate-400">一年 (12个月)</span>
+                        </button>
+                        <button onClick={() => startSeclusion(60)} className="w-full py-3 bg-slate-50 hover:bg-fuchsia-50 border border-slate-200 hover:border-fuchsia-300 rounded text-slate-700 transition-colors flex justify-between px-6">
+                            <span>生死关</span>
+                            <span className="text-slate-400">五年 (60个月)</span>
+                        </button>
+                    </div>
 
-                        <div className="mt-6 flex justify-center">
-                            <button onClick={() => setShowSecludeModal(false)} className="text-slate-400 hover:text-slate-600 text-sm">暂不闭关</button>
-                        </div>
+                    <div className="mt-6 flex justify-center">
+                        <button onClick={() => setShowSecludeModal(false)} className="text-slate-400 hover:text-slate-600 text-sm">暂不闭关</button>
                     </div>
                 </div>
-            )}
-        </div >
+            </div>
+        )}
+        
+        {/* === Fullscreen Narrative Overlay === */}
+        <NarrativeOverlay key={narrativeEvent?.id ?? 'none'} event={narrativeEvent} onClose={clearNarrative} />
+
+    </div>
     );
 };

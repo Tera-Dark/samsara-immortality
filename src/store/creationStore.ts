@@ -5,6 +5,7 @@ import { TALENTS } from '../modules/xianxia/data/talents';
 import { useMetaStore } from './metaStore';
 import { useUIStore } from './uiStore';
 import { useGameStore } from './gameStore';
+import { AchievementSystem } from '../engine/systems/AchievementSystem';
 
 interface CreationState {
     availableTalents: Talent[];
@@ -70,8 +71,9 @@ export const useCreationStore = create<CreationState>()(
                         }
 
                         // 2. Filter Pool
-                        // If pool is empty for that grade, fallback to Grade 1 (Common)
-                        let pool = TALENTS.filter(t => t.grade === targetGrade && !drawnIds.has(t.id));
+                        // Grade 5/6 need achievement unlock; If pool is empty for that grade, fallback to Grade 1 (Common)
+                        const unlockedGrades = AchievementSystem.getUnlockedTalentGrades();
+                        let pool = TALENTS.filter(t => t.grade === targetGrade && !drawnIds.has(t.id) && unlockedGrades.has(t.grade));
                         if (pool.length === 0) {
                             pool = TALENTS.filter(t => t.grade === 1 && !drawnIds.has(t.id));
                         }
@@ -118,7 +120,10 @@ export const useCreationStore = create<CreationState>()(
             },
 
             confirmTalents: () => {
-                if (get().selectedTalentIds.length === 0) return; // At least 1
+                const metaState = useMetaStore.getState().metaState;
+                const maxTalents = 3 + (metaState.unlockedUpgrades['meta_talent_slot'] || 0);
+
+                if (get().selectedTalentIds.length !== maxTalents) return;
                 // 重置属性分配
                 useUIStore.getState().setScene('ALLOC');
                 set({
@@ -144,7 +149,7 @@ export const useCreationStore = create<CreationState>()(
 
             autoAllocate: (mode: 'RANDOM' | 'AVG') => {
                 // 每次自动分配都从头开始，重新分配全部点数
-                const totalPoints = 20;
+                const totalPoints = 24;
 
                 if (mode === 'AVG') {
                     set({

@@ -7,9 +7,10 @@ export const BreakthroughOverlay = () => {
     const ackBreakthrough = useGameStore(s => s.ackBreakthrough);
     const realmIdx = useGameStore(s => s.gameState.realm_idx);
     const [isVisible, setIsVisible] = useState(false);
+    const isSuccess = breakthroughMsg?.includes('突破成功') || breakthroughMsg?.includes('踏入') || false;
 
     useEffect(() => {
-        if (breakthroughMsg && breakthroughMsg.includes('突破成功')) {
+        if (breakthroughMsg) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsVisible(true);
         }
@@ -47,27 +48,27 @@ export const BreakthroughOverlay = () => {
 
                 {/* Content */}
                 <div className="relative z-10">
-                    <h2 className="text-4xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-white to-emerald-200 mb-6 drop-shadow-lg tracking-widest animate-pulse-slow">
-                        突破成功
+                    <h2 className={`text-4xl font-serif font-bold text-transparent bg-clip-text mb-6 drop-shadow-lg tracking-widest ${isSuccess ? 'bg-gradient-to-r from-emerald-200 via-white to-emerald-200 animate-pulse-slow' : 'bg-gradient-to-r from-amber-200 via-white to-red-200'}`}>
+                        {isSuccess ? '突破成功' : '气机震荡'}
                     </h2>
 
                     <div className="py-8">
-                        <div className="text-xl text-slate-400 font-serif mb-2">晋升为</div>
-                        <div className="text-5xl font-serif font-bold text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.6)] animate-float">
+                        <div className="text-xl text-slate-400 font-serif mb-2">{isSuccess ? '晋升为' : '当前境界'}</div>
+                        <div className={`text-5xl font-serif font-bold animate-float ${isSuccess ? 'text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.6)]' : 'text-amber-300 drop-shadow-[0_0_15px_rgba(252,211,77,0.45)]'}`}>
                             {realmName}
                         </div>
                     </div>
 
-                    <p className="text-sm text-slate-600 font-mono bg-black/40 py-2 px-4 rounded inline-block border border-slate-200">
+                    <p className="text-sm text-slate-200 font-mono bg-black/40 py-2 px-4 rounded inline-block border border-slate-200/30">
                         {breakthroughMsg}
                     </p>
 
                     <div className="mt-8">
                         <button
                             onClick={handleClose}
-                            className="px-8 py-3 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/50 text-emerald-100 font-serif rounded-lg transition-all hover:scale-105 active:scale-95"
+                            className={`px-8 py-3 border font-serif rounded-lg transition-all hover:scale-105 active:scale-95 ${isSuccess ? 'bg-emerald-600/20 hover:bg-emerald-600/40 border-emerald-500/50 text-emerald-100' : 'bg-amber-600/20 hover:bg-amber-600/40 border-amber-400/50 text-amber-100'}`}
                         >
-                            巩固境界
+                            {isSuccess ? '巩固境界' : '平复气息'}
                         </button>
                     </div>
                 </div>

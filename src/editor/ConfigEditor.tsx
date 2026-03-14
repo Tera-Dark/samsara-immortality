@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import type { ModuleConfig } from '../types/meta';
 
 export const ConfigEditor: React.FC = () => {
-    const { engine } = useGameStore();
+    const { engine, updateRuntimeConfig } = useGameStore();
     const [statsJson, setStatsJson] = useState(() =>
         JSON.stringify(engine.moduleConfig.stats, null, 2)
     );
@@ -13,12 +14,8 @@ export const ConfigEditor: React.FC = () => {
 
     const handleApply = (field: 'stats' | 'resources', json: string) => {
         try {
-            const parsed = JSON.parse(json);
-            if (field === 'stats') {
-                engine.moduleConfig.stats = parsed;
-            } else {
-                engine.moduleConfig.resources = parsed;
-            }
+            const parsed = JSON.parse(json) as ModuleConfig['stats'] | ModuleConfig['resources'];
+            updateRuntimeConfig(field, parsed);
             setError('');
             alert(`✓ ${field === 'stats' ? '属性配置' : '资源配置'}已更新`);
         } catch (e) {

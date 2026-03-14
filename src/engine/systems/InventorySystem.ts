@@ -1,11 +1,12 @@
 /**
- * InventorySystem — 物品背包管理
- * 
- * 从 GameEngine 中提取的物品管理逻辑：添加、移除、使用物品、灵石管理。
+ * InventorySystem - 物品背包管理
+ *
+ * 从 GameEngine 中提取的物品管理逻辑：添加、移除、使用物品、金钱管理。
  */
 
 import type { GameEngine } from '../GameEngine';
 import { ITEMS } from '../../data/items';
+import { SKILLS } from '../../data/skills';
 
 export class InventorySystem {
     static addItem(engine: GameEngine, itemId: string, count: number): void {
@@ -37,7 +38,7 @@ export class InventorySystem {
         return true;
     }
 
-    static useItem(engine: GameEngine, itemId: string): { success: boolean; message: string } {
+    static consumeItem(engine: GameEngine, itemId: string): { success: boolean; message: string } {
         const slot = engine.state.inventory.find(s => s.itemId === itemId);
         if (!slot) return { success: false, message: '你没有该物品。' };
 
@@ -45,26 +46,41 @@ export class InventorySystem {
         if (!itemDef) return { success: false, message: '物品定义不存在。' };
         if (itemDef.type !== 'CONSUMABLE') return { success: false, message: '该物品无法直接使用。' };
 
-        // Consume 1
         this.removeItem(engine, itemId, 1);
 
-        // Apply Effect
+        let msg = `使用了【${itemDef.name}】。`;
+
         if (itemDef.effect) {
             const changes = engine.applyEffect(itemDef.effect);
-            let msg = `使用了[${itemDef.name}]。`;
             if (changes.length > 0) {
-                msg += `\n( ${changes.join('，')} )`;
+                msg += `\n(${changes.join('，')})`;
             }
             if (itemDef.effect.history) {
                 msg += `\n${itemDef.effect.history}`;
             }
-            return { success: true, message: msg };
+        } else {
+            msg += '\n暂时没有感受到明显变化。';
         }
 
-        return { success: true, message: `使用了[${itemDef.name}]，感觉什么也没发生。` };
-    }
+        if (itemDef.learnSkillId && SKILLS[itemDef.learnSkillId]) {
+            const skillDef = SKILLS[itemDef.learnSkillId];
+            const learnResult = engine.learnSkill(itemDef.learnSkillId);
+            msg += learnResult.success
+                ? `\n你领悟了【${skillDef.name}】。`
+                : `\n${learnResult.message}`;
 
-    // ─── Money Helpers ───
+            const hasNoEquippedSkills = engine.state.equippedSkills.every(skillId => !skillId);
+            const firstEmptySlot = engine.state.equippedSkills.findIndex(skillId => !skillId);
+            if (learnResult.success && hasNoEquippedSkills && firstEmptySlot !== -1) {
+                const equipResult = engine.equipSkill(itemDef.learnSkillId, firstEmptySlot);
+                if (equipResult.success) {
+                    msg += '\n新法术已自动装备到第一个法术位。';
+                }
+            }
+        }
+
+        return { success: true, message: msg };
+    }
 
     static addSpiritStones(engine: GameEngine, amount: number): void {
         engine.state.attributes.MONEY = (engine.state.attributes.MONEY || 0) + amount;

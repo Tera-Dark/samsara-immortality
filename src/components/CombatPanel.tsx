@@ -160,25 +160,29 @@ export const CombatPanel: React.FC = () => {
                                 const canAfford = (skill.costType === 'MP' && player.mp >= skill.costAmount) ||
                                     (skill.costType === 'HP' && player.hp > skill.costAmount) ||
                                     skill.costType === 'NONE';
+                                const isCoolingDown = (skill.currentCooldown || 0) > 0;
+                                const canUse = canAfford && !isCoolingDown;
 
                                 return (
                                     <button
                                         key={skill.id}
                                         onClick={() => executeCombatSkill(skill.id)}
-                                        disabled={!canAfford}
+                                        disabled={!canUse}
                                         className={`px-6 py-3 rounded-lg border text-sm font-serif transition-all relative overflow-hidden group
-                                            ${canAfford
+                                            ${canUse
                                                 ? 'bg-slate-800/80 border-slate-600 text-slate-700 hover:bg-slate-700 hover:border-slate-400 hover:shadow-lg hover:-translate-y-0.5'
                                                 : 'bg-white/80 border-slate-200 text-slate-500 cursor-not-allowed'
                                             }
                                         `}
                                     >
                                         <span className="relative z-10">{skill.name}</span>
-                                        {skill.costType !== 'NONE' && (
-                                            <div className="text-[10px] mt-1 relative z-10 opacity-70">
-                                                消耗: {skill.costAmount} {skill.costType}
-                                            </div>
-                                        )}
+                                        <div className="text-[10px] mt-1 relative z-10 opacity-70">
+                                            {isCoolingDown
+                                                ? `冷却: ${skill.currentCooldown} 回合`
+                                                : skill.costType !== 'NONE'
+                                                    ? `消耗: ${skill.costAmount} ${skill.costType}`
+                                                    : '无需消耗'}
+                                        </div>
                                     </button>
                                 );
                             })}
